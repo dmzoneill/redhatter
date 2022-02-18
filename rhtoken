@@ -1,4 +1,54 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
+
+"""
+Install python dependancies
+===========================
+pip3 install selenium
+pip3 install requests
+
+Download rhtoken
+================
+curl https://raw.githubusercontent.com/dmzoneill/rh-otp-auto-connect/master/rhtoken -o /usr/local/bin/rhtoken
+chmod +x /usr/local/bin/rhtoken
+
+Get chrome version
+==================
+MacOS
+export gcv=$(/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --version)
+
+Linux
+export gcv=$(google-chrome --version)
+
+Download chromedriver
+=====================
+MacOs
+curl https://chromedriver.storage.googleapis.com/$gcv/chromedriver_mac64.zip -o cd.zip
+curl https://chromedriver.storage.googleapis.com/$gcv/chromedriver_mac64_m1.zip -o cd.zip
+
+Linux
+curl https://chromedriver.storage.googleapis.com/$gcv/chromedriver_linux64.zip -o cd.zip
+
+Extract Chrome Driver
+=====================
+cd ~/Downloads
+unzip 'cd.zip' -d /usr/local/bin
+chmod +x /usr/local/bin/chromedriver
+
+Create a profile in google chrome
+=================================
+visit chrome://version and get the profile location
+
+On MacOS it will be something like
+/Users/daoneill/Library/Application Support/Google/Chrome/Profile 2
+
+On linux
+/home/daoneill/.config/google-chrome/Profile 2/Default
+
+Update the profile below
+========================
+Scroll down and update the profile location
+
+"""
 
 import argparse
 import platform
@@ -13,7 +63,7 @@ from selenium.common.exceptions import WebDriverException
 import traceback
 import time
 
-chrome_driver_dir = "/opt/chromedriver/"
+chrome_driver_dir = "/usr/local/bin/"
 chrome_driver_location = chrome_driver_dir + "/chromedriver"
 profile_location = "/home/daoneill/.config/google-chrome/Profile 4/Default"
 
