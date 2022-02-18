@@ -48,6 +48,12 @@ Update the profile below
 ========================
 Scroll down and update the profile location
 
+Security
+========================
+MacOS
+You may need to visit "system preferences > security and private"
+and allow chrome driver to run
+
 """
 
 import argparse
