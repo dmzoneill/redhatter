@@ -14,14 +14,16 @@ Install::
         
     Linux 
 
-        oathtool 
-        expect
+        sudo (apt/dnf/..) install oathtool expect        
 
 Configure::
 
     echo "<< secret >>" > hotp-secret
     echo "1" > hotp-counter
+    
     # verify
+    # Mac probbaly need to add /opt/local/bin/ to $PATH
+
     oathtool -b -c $(cat ./hotp-counter) $(cat ./hotp-secret)
 
     MacOS
@@ -41,11 +43,13 @@ Execute::
 On Login::
 
     MacOS
+
         mkdir ~/Library/LaunchAgents/
         cp .config/com.rh.autoconnect.plist ~/Library/LaunchAgents/ 
         sed -i '' "s#daoneill#<<username>>#g"  ~/Library/LaunchAgents/com.rh.autoconnect.plist
 
     Linux
+
         cp -rv .config/autostart/*.desktop ~/.conf/autostart/
 
 RedHat OTP Chrome Plugin
