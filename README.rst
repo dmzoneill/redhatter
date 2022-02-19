@@ -45,11 +45,11 @@ Configure::
         nmcli con show
         echo "<<connection uuid>>" >> uuid
 
-Execute:
+Execute::
 
     ./vpn-connect
 
-On Login:
+On Login::
 
     MacOS
         mkdir ~/Library/LaunchAgents/
