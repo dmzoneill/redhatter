@@ -1,12 +1,6 @@
-#!/usr/bin/env bash -x
+#!/usr/bin/env bash
 
-uname=$(uname)
-
-if [ "$uname" == "Darwin" ]; then
-    counter=$(cat ./hotp-counter)
-    /opt/local/bin/oathtool -b -c $counter $(cat ./hotp-secret)
-    counter=$((counter+1))
-    echo $counter > ./hotp-counter
-else
-    ./enterpw | grep HOTP | awk '{print $3}'
-fi
+counter=$(cat ./hotp-counter)
+oathtool -b -c $counter $(cat ./hotp-secret)
+counter=$((counter+1))
+echo $counter > ./hotp-counter

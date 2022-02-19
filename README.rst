@@ -14,32 +14,21 @@ Install::
         
     Linux 
 
-        https://github.com/paolostivanin/OTPClient    
+        oathtool 
         expect
 
 Configure::
+
+    echo "<< secret >>" > hotp-secret
+    echo "1" > hotp-counter
+    # verify
+    oathtool -b -c $(cat ./hotp-counter) $(cat ./hotp-secret)
 
     MacOS
 
         Go into viscosity preferences and click allow unsafe commands
 
-        echo "<< secret >>" > hotp-secret
-        echo "1" > hotp-counter
-        # verify
-        /opt/local/bin/oathtool -b -c $(cat ./hotp-counter) $(cat ./hotp-secret)
-
     Linux
-
-        # your otpclient pw
-        # this unlocks the otpclinet db
-        echo "<<PW>>" > pw
-        
-        # this is the account name under 
-        # otpclient-cli list
-        echo "<<OAUTH.......>>" > oauth
-
-        # your rh key
-        echo "<<KEY>>" > key
         
         # connect uuid
         nmcli con show

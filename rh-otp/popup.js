@@ -44,12 +44,16 @@ function queryPassword() {
             const pwfield = document.getElementById("password");  
             if(window.location.href.includes('sso.redhat.com/auth/realms')) {
                 console.log(pwfield.value); 
+                var button = document.getElementById("rh-password-verification-submit-button");
+                console.log(button);
                 // document.getElementById("rh-password-verification-submit-button").click();
             }
             else if(window.location.href.includes('auth.redhat.com/auth/realms')){
-                console.log(pwfield.value); 
-                // document.getElementById("submit").click();
-                // document.getElementsByName("submit")[0].click();                
+                var button = document.getElementById("submit");
+                console.log(pwfield.value);                
+                console.log(button);
+                button.click();
+                // document.getElementById("myCheck").click();
             } 
         }, 2000);        
     });    
