@@ -1,11 +1,33 @@
-#!/usr/bin/bash -x
+#!/usr/bin/env bash -x
 
 sleep 15
 
-vpn=$(cat ./uuid)
+uname=$(uname)
+
+username=$(cat ./username)
 key=$(cat ./key)
 token=$(./getpw)
-echo "vpn.secrets.password:$key$token" > /tmp/vpnpw
-sudo nmcli con up uuid $vpn passwd-file /tmp/vpnpw
-sudo rm -f /tmp/vpnpw
-sleep 15
+
+if [ "$uname" == "Darwin" ]; then
+    osascript -e 'quit app "Viscosity"'
+    sleep 5
+    connfile="$HOME/Library/Application Support/Viscosity/OpenVPN/1/config.conf"
+    sed -i '' "s#auth-user-pass#auth-user-pass /tmp/vpnpw#g" "$connfile"
+    /Applications/Viscosity.app/Contents/MacOS/Viscosity &
+    sleep 5
+    echo "$username" > /tmp/vpnpw
+    echo "$key$token" >> /tmp/vpnpw
+    echo "$key$token"
+    osascript -e "tell application \"Viscosity\" to connect \"Red Hat Global VPN\""
+    sleep 5
+    sed -i '' "s#auth-user-pass /tmp/vpnpw#auth-user-pass#g" "$connfile"
+    cat /tmp/vpnpw
+    rm /tmp/vpnpw
+else
+    vpn=$(cat ./uuid)
+    echo "vpn.secrets.password:$key$token" > /tmp/vpnpw
+    sudo nmcli con up uuid $vpn passwd-file /tmp/vpnpw
+    sudo rm -f /tmp/vpnpw
+fi
+
+

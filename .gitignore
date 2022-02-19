@@ -2,3 +2,6 @@ key
 pw
 uuid
 oauth
+hotp-counter
+hotp-secret
+username

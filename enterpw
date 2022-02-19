@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash -x
 
 oauth=$(cat oauth) 
 pw=$(cat pw) 
