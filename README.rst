@@ -21,8 +21,7 @@ Configure::
     echo "<< secret >>" > hotp-secret
     echo "1" > hotp-counter
     
-    # verify
-    # Mac probbaly need to add /opt/local/bin/ to $PATH
+    # verify oathtool is the $PATH
 
     oathtool -b -c $(cat ./hotp-counter) $(cat ./hotp-secret)
 
@@ -45,9 +44,8 @@ On Login::
     MacOS
 
         mkdir ~/Library/LaunchAgents/
-        cp .config/com.rh.autoconnect.plist ~/Library/LaunchAgents/ 
-        sed -i '' "s#daoneill#<<username>>#g"  ~/Library/LaunchAgents/com.rh.autoconnect.plist
-
+        cp .config/*.plist ~/Library/LaunchAgents/ 
+        
     Linux
 
         cp -rv .config/autostart/*.desktop ~/.conf/autostart/
@@ -73,7 +71,13 @@ Run::
 
 Run at boot::
 
-    cp -rv .config/autostart/*.desktop ~/.conf/autostart/
+    Linux
+    
+        cp -rv .config/autostart/*.desktop ~/.conf/autostart/
+    
+    MacOS
+    
+        cp .config/*.plist ~/Library/LaunchAgents/
 
 Verify::
 
@@ -83,26 +87,3 @@ Usage::
 
     In the extensions in the top right hand of the browser, pin the redhat icon.
     Hit the redhat button when on auth.redhat.com and it will fill in the password box
-
-RedHat OSD console token fetcher
-================================
-
-Install::
-
-    https://chromedriver.chromium.org/
-    cp chromedriver /opt/chromedriver/chromedriver
-    cp rhtoken /usr/local/bin/rhtoken
-    chmod +x /usr/local/bin/rhtoken
-
-Configure::
-
-    Open the google chrome and add a new profile "SSO"
-    Type "chrome:://version" in the location bar
-    Note the profile path
-    Modify rhtoken lines 27 & 30
-
-Usage::
-    
-    rhtoken s # get a stage token    
-    rhtoken p # get a production token    
-    rhtoken e # get a ephemeral token

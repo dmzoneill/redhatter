@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 
+uname=$(uname)
+tool=$(which oathtool)
+
+if [ "$uname" == "Darwin" ]; then
+    tool="/opt/local/bin/oathtool"
+fi
+
 counter=$(cat ./hotp-counter)
-oathtool -b -c $counter $(cat ./hotp-secret)
+$tool -b -c $counter $(cat ./hotp-secret)
 counter=$((counter+1))
 echo $counter > ./hotp-counter

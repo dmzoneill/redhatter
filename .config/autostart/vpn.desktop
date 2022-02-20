@@ -2,7 +2,7 @@
 Name=Connect vpn at login
 GenericName=vpn-start
 Comment=Run vpn login at login
-Exec=bash -c 'cd $HOME/src/otpanswer && ./vpn-connect'
+Exec=bash -c 'cd $HOME/src/rh-otp-auto-connect && ./vpn-connect'
 Terminal=true
 Type=Application
 X-GNOME-Autostart-enabled=true
