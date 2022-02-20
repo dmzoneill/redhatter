@@ -14,29 +14,33 @@ $("#loadedPassword").click(function(){
 function queryPassword() {
     console.log('query Password');    
 
-    chrome.storage.sync.get('pw', (result) => {
+    chrome.storage.sync.get('creds', (result) => {
         console.log('update password box');            
         const pwfield = document.getElementById("password");
         const unfield1 = document.getElementById("username");
         const unfield2 = document.getElementById("username-verification");
 
+        const unpw = result.creds.split(",");
+        const un = unpw[0];
+        const pw = unpw[1];
+
         if(window.location.href.includes('sso.redhat.com/auth/realms')) {
-            console.log(result.pw.substring(0, result.pw.length - 6));
-            unfield1.value = "daoneill@redhat.com";   
-            unfield2.value = "daoneill@redhat.com";              
-            pwfield.value = result.pw.substring(0, result.pw.length - 6);
+            console.log(pw.substring(0, pw.length - 6));
+            unfield1.value = un + "@redhat.com";   
+            unfield2.value = un + "@redhat.com";              
+            pwfield.value = pw.substring(0, pw.length - 6);
             pwfield.style.border = "thick solid #0000FF";            
             unfield1.style.border = "thick solid #0000FF"; 
             unfield2.style.border = "thick solid #0000FF"; 
         }
         else if(window.location.href.includes('auth.redhat.com/auth/realms')){
-            unfield1.value = "daoneill";
+            unfield1.value = un;
             unfield1.style.border = "thick solid #0000FF";  
-            pwfield.value = result.pw;
+            pwfield.value = pw;
             pwfield.style.border = "thick solid #0000FF";       
         }
         else {
-            pwfield.value = result.pw; 
+            pwfield.value = pw; 
             pwfield.style.border = "thick solid #0000FF";         
         }   
 
@@ -62,9 +66,11 @@ function queryPassword() {
 async function init(){
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-    $.get( "http://localhost:8000", function( data ) {
-        $("#loadedPassword").text(data);
-        chrome.storage.sync.set({pw: data}, function() {
+    $.get( "http://localhost:8000/get_creds", function( data ) {
+        const unpw = data.split(",");
+        const pw = unpw[1];
+        $("#loadedPassword").text(pw);
+        chrome.storage.sync.set({creds: data}, function() {
             chrome.scripting.executeScript({
                 target: { tabId: tab.id },
                 function: queryPassword
