@@ -170,7 +170,12 @@ def get_token_string():
             except:
                 continue
 
+        parts = Pre.split(" ")
+        login_process = subprocess.Popen(parts, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, _ = login_process.communicate()
+
         print(Pre)
+        print(stdout.decode("UTF-8"))
 
         driver.close()
     except FileNotFoundError as fileNotFoundError:
