@@ -138,6 +138,8 @@ def get_token_string():
             url = "https://oauth-openshift.apps.crcp01ue1.o9m8.p1.openshiftapps.com/oauth/token/request"
         elif args.env == "s":
             url = "https://oauth-openshift.apps.crcs02ue1.urby.p1.openshiftapps.com/oauth/token/request"
+        elif args.env == "c":
+            url = "https://oauth-openshift.apps.appsrep05ue1.zqxk.p1.openshiftapps.com/oauth/token/request"
         else:
             url = None
 
