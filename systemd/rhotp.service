@@ -1,0 +1,11 @@
+[Unit]
+Description=Chuckbot
+
+[Service]
+WorkingDirectory=%h/src/rh-otp-auto-connect
+ExecStart=python3 -m uvicorn main:app --reload
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=default.target

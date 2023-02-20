@@ -1,7 +1,8 @@
 key
 pw
-uuid
+uuid*
 oauth
 hotp-counter
 hotp-secret
 username
+**/__pycache__/**
