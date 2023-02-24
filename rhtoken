@@ -129,6 +129,7 @@ def get_token_string():
     try:
         my_parser = argparse.ArgumentParser(description='login to redhat osd')
         my_parser.add_argument('env', metavar='env', type=str, help='the env to get a token')
+        my_parser.add_argument('-h', '--headless', action='store_true', help='Run selenium in headless mode')
         args = my_parser.parse_args()
 
         url = None
@@ -149,7 +150,8 @@ def get_token_string():
         options = Options()
         options.binary_location = "/opt/google/chrome-beta/chrome"
         options.add_argument("--user-data-dir=" + profile_location)
-        # options.add_argument('--headless')
+        if args.headless:
+            options.add_argument('--headless')
         service = Service(chrome_driver_location)
         driver = webdriver.Chrome(service=service, options=options)
         driver.get(url)

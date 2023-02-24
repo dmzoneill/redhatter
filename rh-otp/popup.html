@@ -1,11 +1,182 @@
 <!DOCTYPE html>
-<html>
-  <body>
-    <div style="width:190px">
-      <span id="loadedPassword" />
-      <button id="associateButton">Associate</button>
-      <button id="jdoeEphemeralButton">Jdoe Ephemeral</button>    
-      <script src="popup.js"></script>
+<html lang="en">
+
+<head>
+  <title>Redhat OTP Popup</title>
+  <style>
+    body {
+      background-color: #FFFFFF;
+    }
+
+    input[type='checkbox'] {
+      margin-left: 20px
+    }
+
+    #headDiv {
+      width: 252px
+    }
+
+    #loginDiv,
+    #linksDiv,
+    #cacheDiv,
+    #rhtokenDiv {
+      width: 220px;
+      margin-bottom: 0px;
+      padding: 0px;
+    }
+
+    #redhatLogo {
+      width: 64px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    h3 {
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+      margin-top: 0px;
+      text-align: center;
+    }
+
+    #cache-clear,
+    #expires-extend,
+    #expires-time,
+    #passclipbox,
+    #associateButton,
+    #jdoeEphemeralButton,
+    #ephemeral-link {
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+      margin-bottom: 5px;
+      margin-top: 5px;
+      text-align: center;
+    }
+
+    .checkboxes {
+      display: flex;
+      align-items: center;
+      height: 20px;
+      vertical-align: middle;
+    }
+
+    #clipboard {
+      width: 16px;
+      height: 16px;
+    }
+
+    fieldset {
+      margin: 5px;
+      margin-bottom: 15px;
+      padding: 0 10px 10px;
+      border: 1px solid #AAAAAA;
+      border-radius: 8px;
+      padding-top: 10px;
+    }
+
+    legend {
+      padding: 2px 4px;
+      margin-bottom: 5px;
+      background: #fff;
+      font-weight: 600;
+    }
+
+    fieldset>legend {
+      float: left;
+      margin-top: -20px;
+    }
+
+    fieldset>legend+* {
+      clear: both;
+    }
+
+    .fieldLogo {
+      width: 16px;
+      vertical-align: middle;
+    }
+
+    .logoAnimation {
+      animation: 2s rotate infinite linear;
+    }
+
+    @keyframes rotate {
+      100% {
+        transform: rotate(1turn)
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="headDiv">
+    <img id="redhatLogo" alt="redhat" src="images/rh.png" />
+    <h3>Redhat O.T.P & AutoLogin</h3>
+  </div>
+
+  <fieldset>
+    <legend><img class="fieldLogo" alt="redhat" src="images/rh.png" /> Fetch password</legend>
+    <div id="loginDiv">
+      <div class="checkboxes" id="passclipbox">
+        <span title="Click to copy" id="loadedPassword">Working...</span>&nbsp;&nbsp;<img id="clipboard"
+          alt="click to copy" title="click to copy" src='images/clipboard.png' />
+      </div>
+      <button id="associateButton">Associate Password</button>
+      <button id="jdoeEphemeralButton">Ephemeral Password</button>
     </div>
-  </body>
+  </fieldset>
+
+  <fieldset>
+    <legend><img class="fieldLogo" alt="redhat" src="images/rh.png" /> Enable autologin</legend>
+    <div id="loginDiv">
+      <div class="checkboxes">
+        <input type="checkbox" id="automaticLoginEph" /><label>&nbsp;&nbsp;Automatic login (ephemeral)</label>
+      </div>
+      <div class="checkboxes">
+        <input type="checkbox" id="automaticLoginStage" /><label>&nbsp;&nbsp;Automatic login (stage)</label>
+      </div>
+      <div class="checkboxes">
+        <input type="checkbox" id="automaticLoginProd" /><label>&nbsp;&nbsp;Automatic login (production)</label>
+      </div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend><img class="fieldLogo" alt="redhat" src="images/rh.png" /> RHToken options</legend>
+    <div id="rhtokenDiv">
+      <div class="checkboxes">
+        <input type="checkbox" id="rhtokenHeadless" /><label>&nbsp;&nbsp;Headless (selenium)</label>
+      </div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend><img class="fieldLogo" alt="redhat" src="images/rh.png" /> Ephemeral Namespace</legend>
+    <div id="linksDiv">
+      <div class="checkboxes" id="ephemeral-namespace">
+        <a id="ephemeral-link" href="">Determining namespace, standby...</a>
+      </div>
+      <div class="checkboxes" id="ephemeral-namespace-expire">
+        <label id="expires-time" id="expire-time-box"></label>
+      </div>
+      <div class="checkboxes" id="ephemeral-namespace-extend">
+        <button id="expires-extend">Extend 72hrs</button>
+      </div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend><img class="fieldLogo" alt="redhat" src="images/rh.png" /> Other</legend>
+    <div id="cacheDiv">
+      <div class="checkboxes" id="cache-clear">
+        <button id="cache-clear-button">Clear cache</button>
+      </div>
+    </div>
+  </fieldset>
+
+  <script src="popup.js"></script>
+</body>
+
 </html>

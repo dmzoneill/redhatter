@@ -17,3 +17,4 @@ Install the companion chrome extension:
 - [Chrome extension](https://github.com/dmzoneill/rh-otp-auto-connect/blob/main/README.CHROME.md)
 
 ![Browser shot](https://github.com/dmzoneill/rh-otp-auto-connect/blob/main/images/readme-image.png?raw=true)
+![Browser shot](https://github.com/dmzoneill/rh-otp-auto-connect/blob/main/images/workflow.png?raw=true)

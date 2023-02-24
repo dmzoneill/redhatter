@@ -1,6 +1,6 @@
 {
-  "name": "RedHat O.T.P",
-  "description": "Proof of concept for O.T.P",
+  "name": "RedHat O.T.P & AutoLogin",
+  "description": "Manage automatic login for ephemeral and other services",
   "version": "1.0",
   "manifest_version": 3,
   "permissions": [
@@ -11,12 +11,13 @@
   "host_permissions": [
     "http://localhost:8000/get_creds"
   ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "content_scripts": [
     {
       "matches": [
-        "*://*.openshiftapps.com/oauth/authorize*", 
-        "*://gitlab.cee.redhat.com/users/sign_in",
-        "*://ci.int.devshift.net/*"
+        "*://*/*"
       ],
       "js": ["contentscript.js"],
       "run_at": "document_end"
