@@ -7,6 +7,12 @@ The tool works by on staryup or by demand, and the tool will attempt to connect 
 
 rh-otp-auto-connect is especially useful for Red Hat employees who frequently need to connect to the company's VPN while working remotely or on-the-go. By automating the OTP entry process, the tool saves time and reduces the risk of human error when entering codes. The tool is open-source and available on GitHub, which means that it can be customized and adapted for use in other environments or by other organizations with similar VPN requirements.
 
+Prerequisites:
+
+- [kubectl](https://kubernetes.io/docs/tasks/tools/)
+- [bonfire](https://pypi.org/project/crc-bonfire/)
+- [oc](https://docs.openshift.com/container-platform/4.11/cli_reference/openshift_cli/getting-started-cli.html)
+
 Get started with:
 
 - [Linux](https://github.com/dmzoneill/rh-otp-auto-connect/blob/main/README.LINUX.md)
