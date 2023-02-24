@@ -38,10 +38,13 @@ def get_namespace_password(namespace):
         return cache["eph-password"]
 
     set_namespace(namespace)
-    secret = pexec("kubectl get secret \"env-" + namespace +
-                   "-keycloak\" -o json").decode("UTF-8").strip()
+    secret = (
+        pexec('kubectl get secret "env-' + namespace + '-keycloak" -o json')
+        .decode("UTF-8")
+        .strip()
+    )
     password = json.loads(secret)
-    password = password['data']['defaultPassword']
+    password = password["data"]["defaultPassword"]
     password = base64.b64decode(password).decode("utf-8")
     cache["eph-password"] = password
     return cache["eph-password"]
@@ -50,15 +53,15 @@ def get_namespace_password(namespace):
 def get_namespace(username, headless=""):
     global cache
 
-    if 'namespace' in cache:
+    if "namespace" in cache:
         return cache["namespace"]
 
-    server = pexec(
-        "oc project | awk -F'\"' '{print $4}'").decode("UTF-8").strip()
+    server = pexec("oc project | awk -F'\"' '{print $4}'").decode("UTF-8").strip()
     if server != "https://api.c-rh-c-eph.8p0c.p1.openshiftapps.com:6443":
         subprocess.call("/usr/bin/rhtoken e " + headless, shell=True)
-    namespace = pexec("bonfire namespace list | grep " +
-                      username).decode("UTF-8").strip()
+    namespace = (
+        pexec("bonfire namespace list | grep " + username).decode("UTF-8").strip()
+    )
     cache["namespace"] = namespace.split()
     pprint(cache["namespace"])
     return cache["namespace"]
@@ -86,8 +89,11 @@ def get_namespace_route(namespace):
         return cache["eph-route"]
 
     set_namespace(namespace)
-    server = pexec(
-        "kubectl get route 2>/dev/null | tail -n 1 | awk '{print $2}'").decode("UTF-8").strip()
+    server = (
+        pexec("kubectl get route 2>/dev/null | tail -n 1 | awk '{print $2}'")
+        .decode("UTF-8")
+        .strip()
+    )
     cache["eph-route"] = server
     return cache["eph-route"]
 
@@ -99,11 +105,11 @@ def top_level():
 
 @app.get("/get_creds")
 def get_creds(context: str = "associate", headless: bool = False):
-    with open('key', 'r') as kfile:
-        with open('username', 'r') as ufile:
+    with open("key", "r") as kfile:
+        with open("username", "r") as ufile:
             key = kfile.read()
             if context == "associate":
-                token = subprocess.run(['./getpw'], stdout=subprocess.PIPE)
+                token = subprocess.run(["./getpw"], stdout=subprocess.PIPE)
                 token = token.stdout.decode("utf-8")
                 return ufile.read().strip() + "," + key.strip() + token.strip()
             elif context == "jdoeEphemeral":
@@ -115,11 +121,16 @@ def get_creds(context: str = "associate", headless: bool = False):
 
 @app.get("/get_namespace_details")
 def get_namespace_details(headless: bool = False):
-    with open('username', 'r') as ufile:
+    with open("username", "r") as ufile:
         headlessstr = "--headless" if headless else ""
         namespace = get_namespace_name(ufile.read().strip(), headlessstr)
-        result = namespace + "," + get_namespace_route(
-            namespace) + "," + get_namespace_expires(ufile.read().strip(), headlessstr)
+        result = (
+            namespace
+            + ","
+            + get_namespace_route(namespace)
+            + ","
+            + get_namespace_expires(ufile.read().strip(), headlessstr)
+        )
         return result
 
 
@@ -127,7 +138,7 @@ def get_namespace_details(headless: bool = False):
 def get_clear_cache(headless: bool = False):
     global cache
     cache = {}
-    with open('username', 'r') as ufile:
+    with open("username", "r") as ufile:
         headlessstr = "--headless" if headless else ""
         namespace = get_namespace_name(ufile.read().strip(), headlessstr)
         return get_namespace(namespace, headless)
@@ -135,7 +146,7 @@ def get_clear_cache(headless: bool = False):
 
 @app.get("/extend_namespace")
 def get_extend_namespace(headless: bool = False):
-    with open('username', 'r') as ufile:
+    with open("username", "r") as ufile:
         headlessstr = "--headless" if headless else ""
         namespace = get_namespace_name(ufile.read().strip(), headlessstr)
         return extend_namespace(namespace, headless)
