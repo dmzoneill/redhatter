@@ -89,22 +89,20 @@ async function login(context) {
     })
 }
 
-function configureCheckbox(box) {
-    chrome.storage.sync.get([box]).then((result) => {
-        const ele = $('#' + box)
-        console.log(box + ': ' + result[box])
-        console.log(typeof result[box])
+function configureCheckboxCallback(result, box) {
+    const ele = $('#' + box)
+    console.log(box + ': ' + result[box])
+    console.log(typeof result[box])
 
-        if (result[box].toString() == 'true') {
-            console.log('checking: ' + box)
-            ele.prop('checked', true)
-        } else {
-            console.log('not checking: ' + box)
-            const options = {}
-            options[box] = false
-            chrome.storage.sync.set(options).then(() => { })
-        }
-    })
+    if (result[box].toString() == 'true') {
+        console.log('checking: ' + box)
+        ele.prop('checked', true)
+    } else {
+        console.log('not checking: ' + box)
+        const options = {}
+        options[box] = false
+        chrome.storage.sync.set(options).then(() => { })
+    }
 
     $('#' + box).click(function () {
         const options = {}
@@ -112,6 +110,20 @@ function configureCheckbox(box) {
         chrome.storage.sync.set(options).then(() => {
             console.log(box + ': ' + $('#' + box).is(':checked').toString())
         })
+    })
+}
+
+function configureCheckbox(box) {
+    chrome.storage.sync.get([box]).then((result) => {
+        if (!(box in result)) {
+            const options = {}
+            options[box] = false
+            chrome.storage.sync.set(options).then(() => {
+                configureCheckboxCallback(result, box);
+            })
+        } else {
+            configureCheckboxCallback(result, box);
+        }
     })
 }
 

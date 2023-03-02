@@ -2,7 +2,13 @@
 
 uname=$(uname)
 username=$(cat ./username)
-key=$(cat ./key)
+
+key=$(pass show redhat.com/associate-password | tr -d '\n')
+
+if [ "$key" == "" ]; then
+    key=$(cat ./key)
+fi
+
 token=$(./getpw)
 
 if [ "$uname" == "Darwin" ]; then
