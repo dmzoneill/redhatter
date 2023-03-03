@@ -12,6 +12,7 @@ Prerequisites:
 - [kubectl](https://kubernetes.io/docs/tasks/tools/)
 - [bonfire](https://pypi.org/project/crc-bonfire/)
 - [oc](https://docs.openshift.com/container-platform/4.11/cli_reference/openshift_cli/getting-started-cli.html)
+- [pass](https://www.passwordstore.org/)
 
 Get started with:
 
