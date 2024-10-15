@@ -71,133 +71,66 @@ import time
 
 chrome_driver_dir = "/usr/local/bin/"
 chrome_driver_location = chrome_driver_dir + "/chromedriver"
-# profile_location = "/home/daoneill/.config/google-chrome/Profile 4/Default"
 profile_location = "/home/daoneill/.config/google-chrome-beta/Profile 1"
 
 
-def get_chrome_version():
-    return subprocess.getoutput("/opt/google/chrome-beta/chrome --version | awk \'{print $3}\'")
+def get_token_string():
+    my_parser = argparse.ArgumentParser(description='login to redhat osd')
+    my_parser.add_argument('env', metavar='env', type=str, help='the env to get a token')
+    args = my_parser.parse_args()
 
+    url = None
 
-def get_chrome_driver_version():
-    return subprocess.getoutput("chromedriver --version | awk \'{print $2}\'")
-
-
-def chmod_chrome_driver_download():
-    print("Fixing perms on chrome driver download")
-    return subprocess.getoutput("chmod 775 /tmp/download.zip")
-
-
-def chmod_chrome_driver():
-    print("Fixing perms on chrome driver download")
-    return subprocess.getoutput("chmod 775 " + chrome_driver_location)
-
-
-def unzip_chrome_driver():
-    print("Unzipping chrome driver")
-    return subprocess.getoutput("unzip -o /tmp/download.zip -d " + chrome_driver_dir)
-
-
-def download_chrome_driver():
-    print("Downloading chrome driver")
-
-    chrome_version = get_chrome_version()
-    url = 'https://chromedriver.storage.googleapis.com/favicon.ico'
-
-    if platform.system() == "Linux":
-        url = "https://chromedriver.storage.googleapis.com/" + chrome_version + "/chromedriver_linux64.zip"
-    elif platform.system() == "Darwin":
-        url = "https://chromedriver.storage.googleapis.com/" + chrome_version + "/chromedriver_mac64.zip"
+    if args.env == "e":
+        url = "https://oauth-openshift.apps.c-rh-c-eph.8p0c.p1.openshiftapps.com/oauth/token/request"
+    elif args.env == "p":
+        url = "https://oauth-openshift.apps.crcp01ue1.o9m8.p1.openshiftapps.com/oauth/token/request"
+    elif args.env == "s":
+        url = "https://oauth-openshift.apps.crcs02ue1.urby.p1.openshiftapps.com/oauth/token/request"
+    elif args.env == "ap":
+        url = "https://oauth-openshift.apps.appsrep05ue1.zqxk.p1.openshiftapps.com/oauth/token/request"
+    elif args.env == "cp":
+        url = "https://oauth-openshift.apps.appsres03ue1.5nvu.p1.openshiftapps.com/oauth/token/request"
     else:
         url = None
 
-    r = requests.get(url, allow_redirects=True)
-    open('/tmp/download.zip', 'wb').write(r.content)
-    chmod_chrome_driver_download()
-    print(unzip_chrome_driver())
-    chmod_chrome_driver()
+    options = Options()
+    options.binary_location = "/opt/google/chrome-beta/chrome"
+    options.add_argument("--user-data-dir=" + profile_location)
+    service = Service(chrome_driver_location)
+    driver = webdriver.Chrome(service=service, options=options)
+    driver.get(url)
+    wait = WebDriverWait(driver, 10)
+    wait.until(lambda driver: driver.current_url != url)
+    link = driver.find_element(By.XPATH,'//a')
+    link.click()
 
- 
-def update_if_necessary():
-    if get_chrome_version() != get_chrome_driver_version():
-        print("Chrome version = " + get_chrome_version())
-        print("Chrome driver version = " + get_chrome_driver_version())
-        download_chrome_driver()
+    Button=''
+    while not Button:
+        try:
+            Button = driver.find_element(By.XPATH,'//button')
+            Button.click()
+            time.sleep(0.5)
+        except:
+            continue
 
+    Pre=''
+    while not Pre:
+        try:
+            Pre = driver.find_element(By.XPATH,'//pre').text
+            Pre.replace("('","").replace("')","").replace("'","").replace("\n","")
+            time.sleep(0.5)
+        except:
+            continue
 
-def get_token_string():
-    try:
-        my_parser = argparse.ArgumentParser(description='login to redhat osd')
-        my_parser.add_argument('env', metavar='env', type=str, help='the env to get a token')
-        my_parser.add_argument('-h', '--headless', action='store_true', help='Run selenium in headless mode')
-        args = my_parser.parse_args()
+    parts = Pre.split(" ")
+    login_process = subprocess.Popen(parts, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, _ = login_process.communicate()
 
-        url = None
+    print(Pre)
+    print(stdout.decode("UTF-8"))
 
-        if args.env == "e":
-            url = "https://oauth-openshift.apps.c-rh-c-eph.8p0c.p1.openshiftapps.com/oauth/token/request"
-        elif args.env == "p":
-            url = "https://oauth-openshift.apps.crcp01ue1.o9m8.p1.openshiftapps.com/oauth/token/request"
-        elif args.env == "s":
-            url = "https://oauth-openshift.apps.crcs02ue1.urby.p1.openshiftapps.com/oauth/token/request"
-        elif args.env == "ap":
-            url = "https://oauth-openshift.apps.appsrep05ue1.zqxk.p1.openshiftapps.com/oauth/token/request"
-        elif args.env == "cp":
-            url = "https://oauth-openshift.apps.appsres03ue1.5nvu.p1.openshiftapps.com/oauth/token/request"
-        else:
-            url = None
-
-        options = Options()
-        options.binary_location = "/opt/google/chrome-beta/chrome"
-        options.add_argument("--user-data-dir=" + profile_location)
-        if args.headless:
-            options.add_argument('--headless')
-        service = Service(chrome_driver_location)
-        driver = webdriver.Chrome(service=service, options=options)
-        driver.get(url)
-        wait = WebDriverWait(driver, 10)
-        wait.until(lambda driver: driver.current_url != url)
-        link = driver.find_element(By.XPATH,'//a')
-        link.click()
-
-        Button=''
-        while not Button:
-            try:
-                Button = driver.find_element(By.XPATH,'//button')
-                Button.click()
-                time.sleep(0.5)
-            except:
-                continue
-
-        Pre=''
-        while not Pre:
-            try:
-                Pre = driver.find_element(By.XPATH,'//pre').text
-                Pre.replace("('","").replace("')","").replace("'","").replace("\n","")
-                time.sleep(0.5)
-            except:
-                continue
-
-        parts = Pre.split(" ")
-        login_process = subprocess.Popen(parts, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, _ = login_process.communicate()
-
-        print(Pre)
-        print(stdout.decode("UTF-8"))
-
-        driver.close()
-    except FileNotFoundError as fileNotFoundError:
-        print(fileNotFoundError)
-        download_chrome_driver()
-        print(traceback.format_exc())
-    except WebDriverException as webDriverException:
-        print(webDriverException)
-        download_chrome_driver()
-        print(traceback.format_exc())
-    except ModuleNotFoundError as moduleNotFoundError:
-        print("if missing selenium, then try:")
-        print("\n\tsudo -E pip3 install --user selenium\n")
-        print("Then re-run the script")
+    driver.close()
 
 if __name__ == "__main__":
     get_token_string()

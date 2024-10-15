@@ -10,7 +10,7 @@ from subprocess import Popen, PIPE
 app = FastAPI()
 
 cache = {}
-debug_output = False
+debug_output = True
 
 
 def debug(out):
@@ -73,7 +73,7 @@ def get_namespace_password(namespace):
     set_namespace(namespace)
 
     sc = pexec('kubectl get secret "env-' + namespace + '-keycloak" -o json')
-    secret = sc[1] if sc[0] else ""
+    secret = sc[1] if sc[0] else "{}"
     password = json.loads(secret)
     password = password["data"]["defaultPassword"]
     password = base64.b64decode(password).decode("utf-8")
@@ -81,7 +81,7 @@ def get_namespace_password(namespace):
     return cache["eph-password"]
 
 
-def get_namespace(username, headless=""):
+def get_namespace(username, headless=True):
     debug(inspect.stack()[0][3])
     global cache
 
@@ -92,8 +92,10 @@ def get_namespace(username, headless=""):
     server = pexec("oc project | awk -F'\"' '{print $4}'")
     server = server[1] if server[0] else ""
 
+    headlessstr = "--headless" if headless else ""
+
     if server != "https://api.c-rh-c-eph.8p0c.p1.openshiftapps.com:6443":
-        subprocess.call("/usr/bin/rhtoken e " + headless, shell=True)
+        subprocess.call("/usr/bin/rhtoken e " + headlessstr, shell=True)
 
     namespace = pexec("bonfire namespace list | grep " + username)
     debug("namespace[0] = " + str(namespace[0]))
@@ -118,12 +120,20 @@ def extend_namespace(namespace, headless):
 
 def get_namespace_name(username, headless):
     debug(inspect.stack()[0][3])
-    return get_namespace(username, headless)[0]
+    res = get_namespace(username, headless)
+    if type(res) == list and len(res) > 0:
+        return res[0]
+    else:
+        return "No visible reservation"
 
 
 def get_namespace_expires(username, headless):
     debug(inspect.stack()[0][3])
-    return get_namespace(username, headless)[6]
+    res = get_namespace(username, headless)
+    if type(res) == list and len(res) > 5:
+        return res[6]
+    else:
+        return "No expiration"
 
 
 def get_namespace_route(namespace):
@@ -152,7 +162,6 @@ def top_level():
 @app.get("/get_creds")
 def get_creds(context: str = "associate", headless: bool = False):
     debug(inspect.stack()[0][3])
-    headlessstr = "--headless" if headless else ""
     username = get_from_file("username")
 
     if context == "associate":
@@ -168,7 +177,7 @@ def get_creds(context: str = "associate", headless: bool = False):
         debug("token = " + token)
         return username + "," + key + token
     elif context == "jdoeEphemeral":
-        return "jdoe," + ephemeral_login(username, headlessstr)
+        return "jdoe," + ephemeral_login(username, headless)
     else:
         debug("Context not defined:")
 
@@ -181,14 +190,13 @@ def get_namespace_details(headless: bool = False):
     if username is False:
         return "Failed"
 
-    headlessstr = "--headless" if headless else ""
-    namespace = get_namespace_name(username, headlessstr)
+    namespace = get_namespace_name(username, headless)
     result = (
         namespace
         + ","
         + get_namespace_route(namespace)
         + ","
-        + get_namespace_expires(username, headlessstr)
+        + get_namespace_expires(username, headless)
     )
     return result
 
@@ -204,8 +212,7 @@ def get_clear_cache(headless: bool = False):
     if username is False:
         return "Failed"
 
-    headlessstr = "--headless" if headless else ""
-    namespace = get_namespace_name(username, headlessstr)
+    namespace = get_namespace_name(username, headless)
     return get_namespace(namespace, headless)
 
 
@@ -217,6 +224,5 @@ def get_extend_namespace(headless: bool = False):
     if username is False:
         return "Failed"
 
-    headlessstr = "--headless" if headless else ""
-    namespace = get_namespace_name(username, headlessstr)
+    namespace = get_namespace_name(username, headless)
     return extend_namespace(namespace, headless)
