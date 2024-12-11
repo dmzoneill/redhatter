@@ -70,7 +70,7 @@ async function login(context) {
             headless = result.rhtokenHeadless.toString()
         }
 
-        $.get('http://localhost:8000/get_creds?context=' + context + '&headless=' + headless, function (data) {
+        $.get('http://localhost:8009/get_creds?context=' + context + '&headless=' + headless, function (data) {
             const unpw = data.split(',')
             const pw = unpw[1]
             console.log(pw)
@@ -137,7 +137,7 @@ function configureEphemeralOptions() {
             headless = result.rhtokenHeadless.toString()
         }
 
-        $.get('http://localhost:8000/get_namespace_details?headless=' + headless, function (data) {
+        $.get('http://localhost:8009/get_namespace_details?headless=' + headless, function (data) {
             console.log(data)
             if (data.indexOf(',') > -1) {
                 $('#linksDiv').show()
@@ -165,7 +165,7 @@ function clearCache() {
             headless = result.rhtokenHeadless.toString()
         }
 
-        $.get('http://localhost:8000/clear_cache?headless=' + headless, function (data) {
+        $.get('http://localhost:8009/clear_cache?headless=' + headless, function (data) {
             console.log(data)
             configureEphemeralOptions()
             $('#redhatLogo').removeClass('logoAnimation')
@@ -183,7 +183,7 @@ function extendNamespace() {
             headless = result.rhtokenHeadless.toString()
         }
 
-        $.get('http://localhost:8000/extend_namespace?headless=' + headless, function (data) {
+        $.get('http://localhost:8009/extend_namespace?headless=' + headless, function (data) {
             console.log(data)
             configureEphemeralOptions()
             $('#redhatLogo').removeClass('logoAnimation')

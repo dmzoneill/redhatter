@@ -3,7 +3,7 @@ Description=Chuckbot
 
 [Service]
 WorkingDirectory=%h/src/rh-otp-auto-connect
-ExecStart=python3 -m uvicorn main:app --reload
+ExecStart=python3 -m uvicorn main:app --port 8009 --reload
 Restart=on-failure
 RestartSec=5s
 

@@ -1,7 +1,7 @@
 async function login(context, sendResponse) {
     chrome.storage.sync.get("headless", (result) => {
         let headless = result["headless"].toString()
-        $.get("http://localhost:8000/get_creds?context=" + context + "&headless=" + headless, function (data) {
+        $.get("http://localhost:8009/get_creds?context=" + context + "&headless=" + headless, function (data) {
             chrome.storage.sync.set({ creds: data }, async function () {
                 sendResponse("done");
             });

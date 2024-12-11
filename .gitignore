@@ -6,3 +6,4 @@ hotp-counter
 hotp-secret
 username
 **/__pycache__/**
+associate-password
