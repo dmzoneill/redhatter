@@ -1,8 +1,0 @@
-[Desktop Entry]
-Name=Connect OTP service at login
-GenericName=otp-start
-Comment=Run otp at login
-Exec=bash -c 'cd $HOME/src/rh-otp-auto-connect && python3 -m uvicorn main:app --reload'
-Terminal=true
-Type=Application
-X-GNOME-Autostart-enabled=true

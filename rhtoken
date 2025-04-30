@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
-
 import argparse
-import platform
-import requests
+import os
 import subprocess
+import sys
+import signal
+import requests
+import time
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
@@ -12,33 +14,79 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.support import expected_conditions as EC
-import traceback
-import time
 
 chrome_driver_dir = "/usr/local/bin/"
 chrome_driver_location = chrome_driver_dir + "/chromedriver"
 profile_location = "/home/daoneill/.config/google-chrome-beta/Profile 1"
 
+# Get the real script directory (resolves symlinks)
+script_dir = os.path.dirname(os.path.realpath(__file__))
+
+driver = None  # Global reference to the WebDriver
+login_process = None  # Global reference to the subprocess
+
+
+def cleanup(signum=None, frame=None):
+    """Gracefully shuts down WebDriver and subprocesses before exiting."""
+    global driver, login_process
+
+    print("\n[INFO] Cleaning up before exit...")
+
+    if driver:
+        try:
+            driver.quit()
+            print("[INFO] WebDriver closed successfully.")
+        except Exception as e:
+            print(f"[WARN] WebDriver cleanup failed: {e}")
+
+    if login_process:
+        try:
+            login_process.terminate()  # Kill subprocess
+            login_process.wait(timeout=5)
+            print("[INFO] Subprocess terminated.")
+        except Exception as e:
+            print(f"[WARN] Failed to terminate subprocess: {e}")
+
+    sys.exit(0)
+
+# Handle CTRL+C
+signal.signal(signal.SIGINT, cleanup)
+signal.signal(signal.SIGTERM, cleanup)
+
+def get_credentials_from_endpoint():
+    """Fetches the credentials (username + password) from the specified endpoint."""
+    creds_url = "http://localhost:8009/get_creds?context=associate&headless=false"
+    try:
+        response = requests.get(creds_url)
+        response.raise_for_status()  # Check for HTTP errors
+        creds = response.text.strip().split('"')  # Expecting "username,password"
+        username, password = creds[1].split(",")
+        return username.strip(), password.strip()
+    except requests.RequestException as e:
+        print(f"Error fetching credentials: {e}")
+        return None, None
+
+
 def get_token_string():
-    my_parser = argparse.ArgumentParser(description='login to redhat osd')
-    my_parser.add_argument('env', metavar='env', type=str, help='the env to get a token')
-    my_parser.add_argument('-hl', '--headless', action='store_true', help='Run selenium in headless mode')
+    global driver, login_process
+
+    my_parser = argparse.ArgumentParser(description='Login to Red Hat OSD')
+    my_parser.add_argument('env', metavar='env', type=str, help='The environment to get a token')
+    my_parser.add_argument('-hl', '--headless', action='store_true', help='Run Selenium in headless mode')
     args = my_parser.parse_args()
 
-    url = None
+    url_map = {
+        "e": "https://oauth-openshift.apps.crc-eph.r9lp.p1.openshiftapps.com/oauth/token/request",
+        "p": "https://oauth-openshift.apps.crcp01ue1.o9m8.p1.openshiftapps.com/oauth/token/request",
+        "s": "https://oauth-openshift.apps.crcs02ue1.urby.p1.openshiftapps.com/oauth/token/request",
+        "ap": "https://oauth-openshift.apps.appsrep05ue1.zqxk.p1.openshiftapps.com/oauth/token/request",
+        "cp": "https://oauth-openshift.apps.appsres03ue1.5nvu.p1.openshiftapps.com/oauth/token/request",
+    }
 
-    if args.env == "e":
-        url = "https://oauth-openshift.apps.crc-eph.r9lp.p1.openshiftapps.com/oauth/token/request"
-    elif args.env == "p":
-        url = "https://oauth-openshift.apps.crcp01ue1.o9m8.p1.openshiftapps.com/oauth/token/request"
-    elif args.env == "s":
-        url = "https://oauth-openshift.apps.crcs02ue1.urby.p1.openshiftapps.com/oauth/token/request"
-    elif args.env == "ap":
-        url = "https://oauth-openshift.apps.appsrep05ue1.zqxk.p1.openshiftapps.com/oauth/token/request"
-    elif args.env == "cp":
-        url = "https://oauth-openshift.apps.appsres03ue1.5nvu.p1.openshiftapps.com/oauth/token/request"
-    else:
-        url = None
+    url = url_map.get(args.env)
+    if not url:
+        print("Error: Invalid environment specified.")
+        return
 
     options = Options()
     options.binary_location = "/opt/google/chrome-beta/google-chrome-beta"
@@ -50,47 +98,87 @@ def get_token_string():
     # Initialize the WebDriver
     driver = webdriver.Chrome(service=service, options=options)
 
-    # Navigate to the URL
-    driver.get(url)
+    # Ensure proper cleanup when exiting
+    try:
+        # Navigate to the URL
+        driver.get(url)
 
-    # Wait until the URL has changed
-    wait = WebDriverWait(driver, 20)
-    wait.until(lambda driver: driver.current_url != url)
+        # Wait until the URL has changed
+        wait = WebDriverWait(driver, 20)
+        wait.until(lambda driver: driver.current_url != url)
 
-    # Wait for the presence of the element
-    element_present = EC.presence_of_element_located((By.XPATH, '//a'))
-    WebDriverWait(driver, 20).until(element_present)
+        # Now find the element and click it
+        link = driver.find_element(By.XPATH, '//a')
+        link.click()
 
-    # Now find the element and click it
-    link = driver.find_element(By.XPATH, '//a')
-    link.click()
+        # Fetch credentials from endpoint
+        username, password = get_credentials_from_endpoint()
 
-    Button=''
-    while not Button:
+        if not username or not password:
+            print("Error: Username or password could not be retrieved.")
+            cleanup()
+
         try:
-            Button = driver.find_element(By.XPATH,'//button')
-            Button.click()
-            time.sleep(0.5)
-        except:
-            continue
+            # Wait for login form if present
+            username_input = WebDriverWait(driver, 5).until(
+                EC.presence_of_element_located((By.ID, "username"))
+            )
+            password_input = driver.find_element(By.ID, "password")
+            submit_button = driver.find_element(By.ID, "submit")
 
-    Pre=''
-    while not Pre:
-        try:
-            Pre = driver.find_element(By.XPATH,'//pre').text
-            Pre.replace("('","").replace("')","").replace("'","").replace("\n","")
-            time.sleep(0.5)
-        except:
-            continue
+            # Fill in credentials
+            username_input.send_keys(username)
+            password_input.send_keys(password)
 
-    parts = Pre.split(" ")
-    login_process = subprocess.Popen(parts, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    stdout, _ = login_process.communicate()
+            # Click the submit button
+            submit_button.click()
 
-    print(Pre)
-    print(stdout.decode("UTF-8"))
+            # Wait for login to complete
+            WebDriverWait(driver, 10).until(lambda driver: driver.current_url != url)
 
-    driver.close()
+        except Exception:
+            print("Login form not detected, proceeding...")
+
+        # Wait for the presence of the 'a' element
+        element_present = EC.presence_of_element_located((By.XPATH, '//a'))
+        WebDriverWait(driver, 20).until(element_present)
+
+        Button = ''
+        while not Button:
+            try:
+                Button = driver.find_element(By.XPATH, '//button')
+                Button.click()
+                time.sleep(0.5)
+            except:
+                continue
+
+        Pre = ''
+        while not Pre:
+            try:
+                Pre = driver.find_element(By.XPATH, '//pre').text
+                Pre.replace("('", "").replace("')", "").replace("'", "").replace("\n", "")
+                time.sleep(0.5)
+            except:
+                continue
+
+        parts = Pre.split(" ")
+        login_process = subprocess.Popen(parts, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, _ = login_process.communicate()
+
+        print(Pre)
+        print(stdout.decode("UTF-8"))
+
+    except KeyboardInterrupt:
+        print("\n[INFO] CTRL+C detected. Cleaning up...")
+        cleanup()
+
+    except Exception as e:
+        print(f"[ERROR] Unexpected error: {e}")
+        cleanup()
+
+    finally:
+        cleanup()
+
 
 if __name__ == "__main__":
     get_token_string()

@@ -17,7 +17,6 @@ Prerequisites:
 Get started with:
 
 - [Linux](https://github.com/dmzoneill/rh-otp-auto-connect/blob/main/README.LINUX.md)
-- [MacOSX](https://github.com/dmzoneill/rh-otp-auto-connect/blob/main/README.MACOSX.md)
 
 Install the companion chrome extension:
 

@@ -29,35 +29,19 @@ Password store initialized for 0774BB9B2B5052B6244977F49FC1F6C979869721
 Insert secrets, (associate password and OTP secret)
 ```
 $ pass insert redhat.com/hotp-secret
+$ pass insert redhat.com/hotp-counter
 $ pass insert redhat.com/associate-password
+$ pass insert redhat.com/username
+$ pass insert redhat.com/nm-uuid
 
 $ pass show
 Password Store
 └── redhat.com
     ├── associate-password
+    └── hotp-counter
     └── hotp-secret
-```
-
-Fall back is file, but this is not secure and shouldn't be used
-```
-$ echo "<< secret >>" > hotp-secret
-```
-
-If you dont known how hotp works and what this number is
-then create a new key on token.redhat.com, and start from 1
-```
-$ echo "1" > hotp-counter
-```
-
-Verify oathtool is the $PATH
-```
-$ oathtool -b -c $(cat ./hotp-counter) $(cat ./hotp-secret)
-```
-
-Networkd connection uuid
-```
-$ nmcli con show
-$ echo "<<connection uuid>>" >> uuid
+    └── username
+    └── nm-uuid
 ```
 
 Execute
@@ -68,4 +52,14 @@ $ ./vpn-connect
 On Login
 ```
 $ cp -rv .config/autostart/*.desktop ~/.conf/autostart/
+```
+
+System service
+```
+$ mkdir -p ~/.config/systemd/user
+$ cp -rvf .config/systemd/user/* ~/.config/systemd/user/
+$ systemctl --user daemon-reload
+$ systemctl --user enable rhotp
+$ systemctl --user start rhotp
+
 ```
