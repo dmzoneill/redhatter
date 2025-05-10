@@ -7,6 +7,12 @@ import sys
 import signal
 import requests
 import time
+import urllib.request
+import zipfile
+import shutil
+import stat
+import re
+from pathlib import Path
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
@@ -15,19 +21,16 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.support import expected_conditions as EC
 
-chrome_driver_dir = "/usr/local/bin/"
+chrome_driver_dir = str(Path.home() / "bin")
 chrome_driver_location = chrome_driver_dir + "/chromedriver"
 profile_location = "/home/daoneill/.config/google-chrome-beta/Profile 1"
-
-# Get the real script directory (resolves symlinks)
 script_dir = os.path.dirname(os.path.realpath(__file__))
 
-driver = None  # Global reference to the WebDriver
-login_process = None  # Global reference to the subprocess
+driver = None
+login_process = None
 
 
 def cleanup(signum=None, frame=None):
-    """Gracefully shuts down WebDriver and subprocesses before exiting."""
     global driver, login_process
 
     print("\n[INFO] Cleaning up before exit...")
@@ -41,7 +44,7 @@ def cleanup(signum=None, frame=None):
 
     if login_process:
         try:
-            login_process.terminate()  # Kill subprocess
+            login_process.terminate()
             login_process.wait(timeout=5)
             print("[INFO] Subprocess terminated.")
         except Exception as e:
@@ -49,22 +52,79 @@ def cleanup(signum=None, frame=None):
 
     sys.exit(0)
 
-# Handle CTRL+C
+
 signal.signal(signal.SIGINT, cleanup)
 signal.signal(signal.SIGTERM, cleanup)
 
+
 def get_credentials_from_endpoint():
-    """Fetches the credentials (username + password) from the specified endpoint."""
     creds_url = "http://localhost:8009/get_creds?context=associate&headless=false"
     try:
         response = requests.get(creds_url)
-        response.raise_for_status()  # Check for HTTP errors
-        creds = response.text.strip().split('"')  # Expecting "username,password"
+        response.raise_for_status()
+        creds = response.text.strip().split('"')
         username, password = creds[1].split(",")
         return username.strip(), password.strip()
     except requests.RequestException as e:
         print(f"Error fetching credentials: {e}")
         return None, None
+
+
+def ensure_chromedriver_matches():
+    chrome_binary = "/opt/google/chrome-beta/google-chrome-beta"
+
+    try:
+        output = subprocess.check_output([chrome_binary, "--version"], text=True)
+        match = re.search(r'(\d+\.\d+\.\d+\.\d+)', output)
+        if not match:
+            print("[ERROR] Could not parse Chrome version.")
+            return
+        chrome_version = match.group(1)
+        chrome_major = chrome_version.split('.')[0]
+    except Exception as e:
+        print(f"[ERROR] Failed to get Chrome version: {e}")
+        return
+
+    try:
+        output = subprocess.check_output([chrome_driver_location, '--version'], text=True)
+        driver_version = re.search(r'(\d+)\.', output).group(1)
+        if driver_version == chrome_major:
+            return
+        print(f"[INFO] ChromeDriver version mismatch: {driver_version} vs Chrome {chrome_major}")
+    except Exception:
+        print("[INFO] ChromeDriver not found or broken, will install fresh.")
+
+    url = f"https://storage.googleapis.com/chrome-for-testing-public/{chrome_version}/linux64/chromedriver-linux64.zip"
+    zip_path = os.path.join(chrome_driver_dir, "chromedriver.zip")
+    os.makedirs(chrome_driver_dir, exist_ok=True)
+
+    try:
+        print(f"[INFO] Downloading ChromeDriver {chrome_version} from {url}")
+        urllib.request.urlretrieve(url, zip_path)
+        with zipfile.ZipFile(zip_path, "r") as zip_ref:
+            zip_ref.extractall(chrome_driver_dir)
+
+        extracted_path = os.path.join(chrome_driver_dir, "chromedriver-linux64", "chromedriver")
+        shutil.move(extracted_path, chrome_driver_location)
+        shutil.rmtree(os.path.join(chrome_driver_dir, "chromedriver-linux64"))
+        os.chmod(chrome_driver_location, os.stat(chrome_driver_location).st_mode | stat.S_IEXEC)
+        os.remove(zip_path)
+        print(f"[INFO] ChromeDriver installed at {chrome_driver_location}")
+    except Exception as e:
+        print(f"[ERROR] Failed to download and install ChromeDriver: {e}")
+
+
+def wait_until_found(find_func, interval=0.5, timeout=30):
+    start = time.time()
+    while time.time() - start < timeout:
+        try:
+            result = find_func()
+            if result:
+                return result
+        except Exception:
+            pass
+        time.sleep(interval)
+    raise TimeoutError("Element not found in time.")
 
 
 def get_token_string():
@@ -81,12 +141,15 @@ def get_token_string():
         "s": "https://oauth-openshift.apps.crcs02ue1.urby.p1.openshiftapps.com/oauth/token/request",
         "ap": "https://oauth-openshift.apps.appsrep05ue1.zqxk.p1.openshiftapps.com/oauth/token/request",
         "cp": "https://oauth-openshift.apps.appsres03ue1.5nvu.p1.openshiftapps.com/oauth/token/request",
+        "k": "https://oauth-openshift.apps.stone-prod-p02.hjvn.p1.openshiftapps.com/oauth/token/request"
     }
 
     url = url_map.get(args.env)
     if not url:
         print("Error: Invalid environment specified.")
         return
+
+    ensure_chromedriver_matches()
 
     options = Options()
     options.binary_location = "/opt/google/chrome-beta/google-chrome-beta"
@@ -95,23 +158,17 @@ def get_token_string():
         options.add_argument('--headless')
     service = Service(chrome_driver_location)
 
-    # Initialize the WebDriver
     driver = webdriver.Chrome(service=service, options=options)
 
-    # Ensure proper cleanup when exiting
     try:
-        # Navigate to the URL
         driver.get(url)
 
-        # Wait until the URL has changed
         wait = WebDriverWait(driver, 20)
         wait.until(lambda driver: driver.current_url != url)
 
-        # Now find the element and click it
         link = driver.find_element(By.XPATH, '//a')
         link.click()
 
-        # Fetch credentials from endpoint
         username, password = get_credentials_from_endpoint()
 
         if not username or not password:
@@ -119,51 +176,40 @@ def get_token_string():
             cleanup()
 
         try:
-            # Wait for login form if present
             username_input = WebDriverWait(driver, 5).until(
                 EC.presence_of_element_located((By.ID, "username"))
             )
             password_input = driver.find_element(By.ID, "password")
             submit_button = driver.find_element(By.ID, "submit")
 
-            # Fill in credentials
             username_input.send_keys(username)
             password_input.send_keys(password)
-
-            # Click the submit button
             submit_button.click()
 
-            # Wait for login to complete
             WebDriverWait(driver, 10).until(lambda driver: driver.current_url != url)
 
         except Exception:
             print("Login form not detected, proceeding...")
 
-        # Wait for the presence of the 'a' element
-        element_present = EC.presence_of_element_located((By.XPATH, '//a'))
-        WebDriverWait(driver, 20).until(element_present)
+        Button = wait_until_found(lambda: driver.find_element(By.XPATH, '//button'))
+        Button.click()
 
-        Button = ''
-        while not Button:
-            try:
-                Button = driver.find_element(By.XPATH, '//button')
-                Button.click()
-                time.sleep(0.5)
-            except:
-                continue
-
-        Pre = ''
-        while not Pre:
-            try:
-                Pre = driver.find_element(By.XPATH, '//pre').text
-                Pre.replace("('", "").replace("')", "").replace("'", "").replace("\n", "")
-                time.sleep(0.5)
-            except:
-                continue
+        Pre = wait_until_found(lambda: driver.find_element(By.XPATH, '//pre').text)
+        Pre = Pre.replace("('", "").replace("')", "").replace("'", "").replace("\n", "")
 
         parts = Pre.split(" ")
-        login_process = subprocess.Popen(parts, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, _ = login_process.communicate()
+        login_process = subprocess.Popen(
+            parts,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            start_new_session=True,
+        )
+
+        try:
+            stdout, _ = login_process.communicate(timeout=10)
+        except subprocess.TimeoutExpired:
+            login_process.kill()
+            stdout, _ = login_process.communicate()
 
         print(Pre)
         print(stdout.decode("UTF-8"))
@@ -171,11 +217,9 @@ def get_token_string():
     except KeyboardInterrupt:
         print("\n[INFO] CTRL+C detected. Cleaning up...")
         cleanup()
-
     except Exception as e:
         print(f"[ERROR] Unexpected error: {e}")
         cleanup()
-
     finally:
         cleanup()
 
