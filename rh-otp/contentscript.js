@@ -178,7 +178,7 @@ function RHOTPLoaded () {
     }
   }
 
-  setTimeout(handleLoginScenarios(), 1000)
+  setTimeout(handleLoginScenarios, 1000)
 }
 
 window.addEventListener('load', RHOTPLoaded, false)
