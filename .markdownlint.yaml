@@ -1,0 +1,12 @@
+# Markdownlint configuration
+# Disable overly strict rules that conflict with our documentation style
+
+# MD041: Allow non-heading first line (for HTML/badges)
+MD041: false
+
+# MD040: Allow fenced code blocks without language (for diagrams/output)
+MD040: false
+
+# MD024: Allow duplicate headings (common in long docs with similar sections)
+MD024:
+  siblings_only: true
