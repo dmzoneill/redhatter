@@ -209,7 +209,7 @@ def get_token_string():
         if kubeconfig:
             env["KUBECONFIG"] = kubeconfig
             
-        print("rhtoekn: " + "\n".join(env))
+        # print("rhtoken: " + "\n".join(env))
 
         # Launch subprocess with optional custom env
         login_process = subprocess.Popen(
