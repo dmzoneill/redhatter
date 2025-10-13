@@ -4,6 +4,7 @@ import os
 import subprocess
 
 import gnupg
+import pyotp
 
 logger = logging.getLogger(__name__)
 
@@ -183,6 +184,71 @@ class PasswordStoreService:
         except Exception as e:
             logger.error(f"Error encrypting the password with gnupg after fallback: {e}")
             return False
+
+    def generate_hotp_token(self):
+        """
+        Generate HOTP token and increment the counter.
+
+        Returns:
+            6-digit HOTP token as string
+
+        Raises:
+            ValueError: If counter or secret not found
+        """
+        counter = self.get_from_store("hotp-counter")
+        hotp_secret = self.get_from_store("hotp-secret")
+
+        if not counter or counter is False:
+            raise ValueError("HOTP counter not found in password store.")
+
+        if not hotp_secret or hotp_secret is False:
+            raise ValueError("HOTP secret not found in password store.")
+
+        counter = int(counter.strip())
+        hotp_secret = hotp_secret.strip()
+
+        # Generate token
+        hotp = pyotp.HOTP(hotp_secret)
+        token = hotp.at(counter)
+
+        # Increment and save counter
+        counter += 1
+        self.update_store("hotp-counter", str(counter))
+
+        logger.debug(f"Generated HOTP token (counter: {counter})")
+        return token
+
+    def get_username(self):
+        """Get the Red Hat username from password store."""
+        username = self.get_from_store("username")
+        return username.strip() if username else None
+
+    def get_associate_password(self):
+        """Get the associate password (without OTP) from password store."""
+        password = self.get_from_store("associate-password")
+        return password.strip() if password else None
+
+    def get_associate_credentials(self):
+        """
+        Get full associate credentials (username + password + OTP).
+
+        Returns:
+            Tuple of (username, password_with_otp) or (None, None) on error
+        """
+        username = self.get_username()
+        password = self.get_associate_password()
+
+        if not username or not password:
+            logger.error("Failed to retrieve username or password from store")
+            return None, None
+
+        try:
+            otp_token = self.generate_hotp_token()
+            full_password = f"{password}{otp_token}"
+            return username, full_password
+        except ValueError as e:
+            logger.error(f"Failed to generate OTP: {e}")
+            return None, None
 
 
 # Global instance
