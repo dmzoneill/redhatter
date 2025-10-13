@@ -1,6 +1,7 @@
 """VPN-related business logic and services."""
 import logging
 import subprocess
+from functools import lru_cache
 from pathlib import Path
 from typing import Optional
 
@@ -10,8 +11,26 @@ from fastapi import HTTPException
 logger = logging.getLogger(__name__)
 
 
-def load_vpn_profiles():
-    """Load VPN profiles from profiles.yaml."""
+# Cache profiles config to avoid repeated YAML parsing
+_profiles_cache = None
+_profiles_cache_mtime = None
+
+
+def load_vpn_profiles(use_cache: bool = True):
+    """
+    Load VPN profiles from profiles.yaml with optional caching.
+
+    Args:
+        use_cache: If True, use cached profiles if file hasn't changed
+
+    Returns:
+        Dictionary containing VPN profiles configuration
+
+    Raises:
+        HTTPException: If profiles file not found
+    """
+    global _profiles_cache, _profiles_cache_mtime
+
     profiles_file = Path(__file__).parent.parent / "vpn-profiles" / "profiles.yaml"
 
     if not profiles_file.exists():
@@ -20,8 +39,22 @@ def load_vpn_profiles():
             detail="VPN profiles configuration not found. Run: make vpn-profiles-scan"
         )
 
+    # Check if we can use cache
+    if use_cache and _profiles_cache is not None:
+        current_mtime = profiles_file.stat().st_mtime
+        if current_mtime == _profiles_cache_mtime:
+            logger.debug("Using cached VPN profiles")
+            return _profiles_cache
+
+    # Load from file
     with open(profiles_file) as f:
         config = yaml.safe_load(f)
+
+    # Update cache
+    if use_cache:
+        _profiles_cache = config
+        _profiles_cache_mtime = profiles_file.stat().st_mtime
+        logger.debug("VPN profiles loaded and cached")
 
     return config
 
