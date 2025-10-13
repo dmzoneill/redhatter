@@ -21,7 +21,7 @@ pytest-asyncio = "*"
 httpx = "*"
 
 [requires]
-python_version = "3.13"
+python_version = "3.11"
 
 [scripts]
 start = "uvicorn main:app --reload --port 8009"

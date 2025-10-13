@@ -1,6 +1,6 @@
 [tool.black]
 line-length = 88
-target-version = ['py313']
+target-version = ['py311']
 include = '\.pyi?$'
 extend-exclude = '''
 /(
@@ -23,7 +23,7 @@ line_length = 88
 known_first_party = ["main", "rh_otp"]
 
 [tool.mypy]
-python_version = "3.13"
+python_version = "3.11"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false

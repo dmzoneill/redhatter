@@ -31,7 +31,7 @@ RH-OTP Auto-Connect is a comprehensive system for automating Red Hat infrastruct
   - NetworkManager
   - GPG with configured key
   - Password store (`pass`)
-  - Python 3.13+
+  - Python 3.11+
 - **Optional**:
   - Chrome/Chromium browser
   - GNOME Shell (for desktop extension)

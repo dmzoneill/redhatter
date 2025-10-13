@@ -6,7 +6,7 @@
 
 > 🔐 Comprehensive automation system for Red Hat VPN access, SSO authentication, and ephemeral environment management
 
-[![Python](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
+[![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green.svg)](https://fastapi.tiangolo.com/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.txt)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
@@ -431,7 +431,7 @@ graph LR
 ### 💻 System Requirements
 
 - **OS**: Linux (Fedora/RHEL recommended)
-- **Python**: 3.13 or higher
+- **Python**: 3.11 or higher
 - **NetworkManager**: For VPN connections
 - **GPG**: Configured with user key
 - **Pass**: Unix password manager
