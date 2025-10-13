@@ -637,7 +637,7 @@ Contributions are welcome! Please:
 - [ ] Resource monitoring and health checks
 - [ ] Rate limiting for API
 - [ ] Async operations (full async/await)
-- [ ] CLI tool consolidation ([See analysis](plans/script_consolidation_proposal.md))
+- [ ] Command-line tool consolidation ([See analysis](plans/script_consolidation_proposal.md))
 
 **[Feature Proposals →](plans/)**
 

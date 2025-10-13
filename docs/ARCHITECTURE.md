@@ -5,7 +5,7 @@
 ```mermaid
 graph TB
     subgraph "User Interfaces"
-        CLI[CLI Tools<br/>vpn-connect, vpn-profile-manager]
+        CLI[Command-line tools<br/>vpn-connect, vpn-profile-manager]
         Chrome[Chrome Extension<br/>rh-otp]
         GNOME[GNOME Shell Extension<br/>rh-otp-gnome]
     end
@@ -84,7 +84,7 @@ graph TB
 **Components**:
 - **FastAPI Routes** (`api/routes/vpn.py`): REST endpoints
 - **VPN Service** (`services/vpn.py`): Business logic
-- **Profile Manager** (`vpn-profile-manager`): CLI tool
+- **Profile Manager** (`vpn-profile-manager`): command-line tool
 - **Connection Scripts** (`vpn-connect`, `vpn-connect-shuttle`): Bash wrappers
 
 **Capabilities**:
@@ -413,7 +413,7 @@ graph TB
 |-----------|-----------|---------|
 | Chrome Extension | Manifest V3 | Latest |
 | GNOME Extension | GJS (JavaScript) | GNOME 3.36-49+ |
-| CLI Tools | Bash, Python 3 | Latest |
+| Command-line tools | Bash, Python 3 | Latest |
 
 ### Services
 
@@ -638,7 +638,7 @@ See `plans/bonfire_feature_proposal.md` for detailed roadmap.
 ## Related Documentation
 
 - **[API Reference](API.md)** - Detailed endpoint documentation
-- **[User Guide](USER_GUIDE.md)** - End-user documentation
+- **[User Guide](USER_GUIDE.md)** - end user documentation
 - **[Developer Guide](DEVELOPER_GUIDE.md)** - Development setup and guidelines
 - **[Diagrams](drawings/)** - Additional workflow diagrams
 - **[Plans](../plans/)** - Feature proposals and design documents

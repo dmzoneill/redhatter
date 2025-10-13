@@ -92,7 +92,7 @@ rh-otp-auto-connect/
 │   │   └── certs/               # CA certificates
 │   ├── vpn-connect              # VPN connection scripts
 │   ├── vpn-connect-shuttle
-│   ├── vpn-profile-manager      # VPN CLI tool
+│   ├── vpn-profile-manager      # VPN command-line tool
 │   ├── rhtoken                  # OpenShift token automation
 │   ├── rh-otp/                  # Chrome extension
 │   └── rh-otp-gnome/            # GNOME Shell extension
@@ -214,7 +214,7 @@ git commit -m "feat: add new VPN profile management feature"
 
 **Commit message format** (Conventional Commits):
 - `feat:` New feature
-- `fix:` Bug fix
+- `fix:` bugfix
 - `docs:` Documentation changes
 - `refactor:` Code refactoring
 - `test:` Adding tests
@@ -615,7 +615,7 @@ def find_profile_by_id(profiles: List[dict], profile_id: str) -> Optional[dict]:
 Follow [Semantic Versioning](https://semver.org/):
 - **MAJOR**: Incompatible API changes
 - **MINOR**: New features (backward compatible)
-- **PATCH**: Bug fixes (backward compatible)
+- **PATCH**: bugfixes (backward compatible)
 
 ### Creating a Release
 
@@ -804,6 +804,6 @@ pipenv run safety check
 
 - **[Architecture](ARCHITECTURE.md)** - System architecture overview
 - **[API Reference](API.md)** - Complete API documentation
-- **[User Guide](USER_GUIDE.md)** - End-user documentation
+- **[User Guide](USER_GUIDE.md)** - end user documentation
 - **[VPN Workflows](drawings/VPN_WORKFLOWS.md)** - VPN flow diagrams
 - **[Authentication](drawings/AUTH_FLOWS.md)** - Authentication diagrams
