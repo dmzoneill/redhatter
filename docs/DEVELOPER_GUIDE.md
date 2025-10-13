@@ -17,7 +17,7 @@
 ### Prerequisites
 
 - **Operating System**: Linux (Fedora/RHEL recommended)
-- **Python**: 3.8 or higher
+- **Python**: 3.13 or higher
 - **Git**: For version control
 - **GPG**: Configured with a key
 - **Development tools**: make, gcc, python3-devel

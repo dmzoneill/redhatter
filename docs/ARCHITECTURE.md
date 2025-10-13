@@ -404,7 +404,7 @@ graph TB
 |-----------|-----------|---------|
 | Framework | FastAPI | Latest |
 | Server | Uvicorn | Latest |
-| Language | Python 3 | 3.8+ |
+| Language | Python 3 | 3.13+ |
 | Async | asyncio | Built-in |
 
 ### Frontend
