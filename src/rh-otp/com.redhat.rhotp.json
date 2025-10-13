@@ -1,0 +1,9 @@
+{
+  "name": "com.redhat.rhotp",
+  "description": "Native messaging host for RHOTP Chrome extension",
+  "path": "INSTALL_PATH_PLACEHOLDER/rh-otp/native_host.py",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://hpffdobkffegnaemnhninjeokmodeghh/"
+  ]
+}

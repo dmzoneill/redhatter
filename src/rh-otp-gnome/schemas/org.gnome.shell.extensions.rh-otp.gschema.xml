@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist gettext-domain="gnome-shell-extensions">
+  <schema id="org.gnome.shell.extensions.rh-otp" path="/org/gnome/shell/extensions/rh-otp/">
+    
+    <key name="api-url" type="s">
+      <default>"http://localhost:8009"</default>
+      <summary>RHOTP API URL</summary>
+      <description>URL of the RHOTP FastAPI service</description>
+    </key>
+    
+    <key name="headless" type="b">
+      <default>false</default>
+      <summary>Use headless mode</summary>
+      <description>Use headless mode for rhtoken operations</description>
+    </key>
+    
+    <key name="auto-notifications" type="b">
+      <default>true</default>
+      <summary>Show notifications</summary>
+      <description>Show desktop notifications when passwords are copied</description>
+    </key>
+    
+    <key name="default-context" type="s">
+      <choices>
+        <choice value="associate"/>
+        <choice value="jdoeEphemeral"/>
+      </choices>
+      <default>"associate"</default>
+      <summary>Default password context</summary>
+      <description>Default context to use when clicking the icon directly</description>
+    </key>
+    
+    <key name="show-context-menu" type="b">
+      <default>true</default>
+      <summary>Show context menu</summary>
+      <description>Show menu with both Associate and Ephemeral options</description>
+    </key>
+    
+    <key name="vpn-script-path" type="s">
+      <default>""</default>
+      <summary>VPN script path</summary>
+      <description>Path to the vpn-connect script</description>
+    </key>
+    
+    <key name="vpn-shuttle-path" type="s">
+      <default>""</default>
+      <summary>VPN Shuttle script path</summary>
+      <description>Path to the vpn-connect-shuttle script</description>
+    </key>
+    
+    <key name="auto-check-vpn-status" type="b">
+      <default>true</default>
+      <summary>Auto-check VPN status</summary>
+      <description>Automatically check and display VPN connection status</description>
+    </key>
+    
+  </schema>
+</schemalist>

@@ -1,0 +1,92 @@
+default_settings:
+  auth: SHA256
+  ca: '{{project_dir}}/vpn-profiles/certs/ca-bundle.crt'
+  cipher: AES-256-CBC
+  connection_type: password
+  data_ciphers: AES-256-GCM:AES-128-GCM:CHACHA20-POLY1305:AES-256-CBC
+  password_flags: 2
+  port: 443
+  proto_tcp: true
+  remote_cert_tls: server
+  reneg_seconds: 0
+  tunnel_mtu: 1360
+  verify_x509_name: name:ovpn.redhat.com
+  dns_search: ~.;redhat.com;
+  dns_priority: -1
+  never_default: true
+  route_table: 75
+  routing_rule: priority 16383 from 0.0.0.0/0 table 75
+profiles:
+- id: AMS2
+  name: Amsterdam (AMS2)
+  remote: ovpn-ams2.redhat.com
+  uuid: 7b487c5c-09c9-4c4c-95b0-e562c4a5ad43
+- id: BRQ
+  name: Brno (BRQ)
+  remote: ovpn-brq.redhat.com:443:udp
+  uuid: 992149c9-e4ec-4758-95b5-585f701516d0
+- id: BRQ2
+  name: Brno (BRQ2)
+  remote: ovpn-brq2.redhat.com
+  uuid: 5777c2b4-defc-46f1-9858-2b850d51587c
+- id: EGYPT_RDU2
+  name: Egypt (RDU2-EGYPT)
+  remote: ovpn-egypt-rdu2.redhat.com
+  uuid: 5c784633-6a9a-4b0e-b2c3-31d76ea869a0
+- id: FAB
+  name: Farnborough FAB
+  remote: ovpn-fab.redhat.com:443:udp
+  uuid: a7b447b9-5541-475e-b827-d0ecf98ada4a
+- id: GLOBAL
+  name: Red Hat Global VPN
+  remote: ovpn.redhat.com
+  uuid: 22b01ce9-9ebf-4738-b4dc-097ed19c8dc4
+- id: GRU2
+  name: "S\xE3o Paulo (GRU2)"
+  remote: ovpn-gru2.redhat.com
+  uuid: 26d95e8e-bac5-4308-bc01-ea93656fa112
+- id: IAD2
+  name: Ashburn (IAD2)
+  remote: ovpn-iad2.redhat.com
+  uuid: 97d70663-6f36-44e5-8e5e-faa871424c73
+- id: LCY
+  name: London (LCY)
+  remote: ovpn-lcy.redhat.com
+  uuid: f3967fc7-a927-47e2-92fd-a53338d4bb92
+- id: NRT
+  name: Tokyo (NRT)
+  remote: ovpn-nrt.redhat.com
+  uuid: ef06e9c8-f787-4419-9790-fd89bcbe70da
+- id: PEK2
+  name: Beijing (PEK2)
+  remote: ovpn-pek2.redhat.com
+  uuid: 38486930-d56a-4088-bbb5-d8a6a1d236c0
+- id: PEK2_ALT
+  name: Beijing (PEK2 Alternate)
+  remote: ovpn-pek2-alt.redhat.com
+  uuid: 1cb83a28-5d95-416f-a2d0-4f64bdf0dde5
+  port: 4443
+- id: PNQ2
+  name: Pune (PNQ2)
+  remote: ovpn-pnq2.redhat.com
+  uuid: bd8183b3-3e15-4c20-a27b-5500873fd9ea
+- id: RDU2
+  name: Raleigh (RDU2)
+  remote: ovpn-rdu2.redhat.com
+  uuid: f281b867-85e1-4979-8adf-ad9fac216a7c
+- id: SIN2
+  name: Singapore (SIN2)
+  remote: ovpn-sin2.redhat.com
+  uuid: 461f8cf8-c8dc-478b-9669-80ca01d04c5b
+- id: SYD
+  name: Sydney (SYD)
+  remote: ovpn-syd.redhat.com
+  uuid: 9822534a-1693-4e50-9f61-1560bf0cee17
+- id: TLV
+  name: Tel Aviv (TLV)
+  remote: ovpn-tlv.redhat.com
+  uuid: 8701267a-c060-4076-b40e-9635e1cf16bc
+- id: TLV2
+  name: Tel Aviv (TLV2)
+  remote: ovpn-tlv2.redhat.com
+  uuid: e396fe67-4bb0-426a-850c-e8786fae6cea

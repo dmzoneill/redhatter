@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Connect vpn at login
+GenericName=vpn-start
+Comment=Run vpn login at login
+Exec=bash -c 'cd $HOME/src/rh-otp-auto-connect/src/ && ./vpn-connect'
+Terminal=true
+Type=Application
+X-GNOME-Autostart-enabled=true

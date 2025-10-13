@@ -1,0 +1,36 @@
+[connection]
+id=Raleigh (RDU2)
+uuid=f281b867-85e1-4979-8adf-ad9fac216a7c
+type=vpn
+
+[vpn]
+auth=SHA256
+ca=/home/daoneill/src/rh-otp-auto-connect/src/vpn-profiles/certs/ca-bundle.crt
+cipher=AES-256-CBC
+connection-type=password
+data-ciphers=AES-256-GCM:AES-128-GCM:CHACHA20-POLY1305:AES-256-CBC
+password-flags=2
+port=443
+proto-tcp=yes
+remote=ovpn-rdu2.redhat.com
+remote-cert-tls=server
+reneg-seconds=0
+tunnel-mtu=1360
+username=daoneill
+verify-x509-name=name:ovpn.redhat.com
+service-type=org.freedesktop.NetworkManager.openvpn
+
+[ipv4]
+dns-priority=-1
+dns-search=~.;redhat.com;
+method=auto
+never-default=true
+route-table=75
+routing-rule1=priority 16383 from 0.0.0.0/0 table 75
+
+[ipv6]
+addr-gen-mode=stable-privacy
+method=auto
+never-default=true
+
+[proxy]

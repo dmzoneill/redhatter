@@ -1,0 +1,13 @@
+[Unit]
+Description=OTP Auto-Connect Service
+After=network.target
+
+[Service]
+WorkingDirectory=/home/daoneill/src/rh-otp-auto-connect/src
+ExecStart=/usr/bin/python3 -m uvicorn main:app --port 8009 --reload
+Restart=always
+Environment="PATH=/home/daoneill/.local/bin:/usr/bin:/bin"
+Environment="GPG_TTY=/dev/tty"
+
+[Install]
+WantedBy=default.target

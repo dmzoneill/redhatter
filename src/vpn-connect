@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+
+# Parse command line arguments
+UUID=""
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --uuid)
+      UUID="$2"
+      shift 2
+      ;;
+    *)
+      echo "Unknown option: $1"
+      echo "Usage: $0 [--uuid <vpn-uuid>]"
+      exit 1
+      ;;
+  esac
+done
+
+# Wait for the service on port 8009 to be up
+while ! nc -z localhost 8009; do
+  echo "Waiting for service on port 8009 to be up..."
+  sleep 2  # Wait 2 seconds before retrying
+done
+
+# Read authentication token
+token_file="$HOME/.cache/rhotp/auth_token"
+if [[ ! -f "$token_file" ]]; then
+  echo "Error: Authentication token not found at $token_file"
+  echo "Make sure the RHOTP service has been started at least once."
+  exit 1
+fi
+
+token=$(cat "$token_file")
+if [[ -z "$token" ]]; then
+  echo "Error: Authentication token is empty"
+  exit 1
+fi
+
+# If UUID not provided via command line, get it from FastAPI endpoint
+if [[ -z "$UUID" ]]; then
+  echo "Fetching default VPN UUID from API..."
+  default_vpn_response=$(curl -s -H "Authorization: Bearer $token" "http://localhost:8009/vpn/default")
+
+  # Extract UUID from JSON response using python
+  UUID=$(echo "$default_vpn_response" | python3 -c "import sys, json; print(json.load(sys.stdin).get('uuid', ''))" 2>/dev/null)
+
+  if [[ -z "$UUID" ]]; then
+    echo "Error: Failed to get default VPN UUID from API"
+    echo "Response: $default_vpn_response"
+    exit 1
+  fi
+
+  echo "Using default VPN UUID from API: $UUID"
+else
+  echo "Using provided VPN UUID: $UUID"
+fi
+
+# Get credentials using authenticated API call
+response=$(curl -s -H "Authorization: Bearer $token" "http://localhost:8009/get_creds?context=associate&headless=false")
+creds=$(echo "$response" | tr -d '"' | tr -d '\n')  # Remove quotes from the response
+pw=$(echo "$creds" | cut -d',' -f2)
+
+# Create password file and connect
+echo "vpn.secrets.password:$pw" | sudo tee /tmp/vpnpw > /dev/null
+sudo cat /tmp/vpnpw
+sudo nmcli con up uuid "$UUID" passwd-file /tmp/vpnpw
+sudo rm -f /tmp/vpnpw

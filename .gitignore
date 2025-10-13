@@ -7,3 +7,4 @@ hotp-secret
 username
 **/__pycache__/**
 associate-password
+.venv

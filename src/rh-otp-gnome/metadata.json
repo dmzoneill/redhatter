@@ -1,0 +1,22 @@
+{
+  "uuid": "rh-otp@redhat.com",
+  "name": "Red Hat OTP Auto-Connect",
+  "description": "Quick access to Red Hat OTP credentials with one-click clipboard copy",
+  "shell-version": [
+    "3.36",
+    "3.38",
+    "40",
+    "41",
+    "42",
+    "43",
+    "44",
+    "45",
+    "46",
+    "47",
+    "48",
+    "49"
+  ],
+  "version": "1.0.0",
+  "url": "https://github.com/redhat/rh-otp-auto-connect",
+  "settings-schema": "org.gnome.shell.extensions.rh-otp"
+}

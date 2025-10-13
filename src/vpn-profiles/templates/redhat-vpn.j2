@@ -1,0 +1,38 @@
+[connection]
+id={{ name }}
+uuid={{ uuid }}
+type=vpn
+
+[vpn]
+auth={{ auth }}
+ca={{ ca }}
+cipher={{ cipher }}
+connection-type={{ connection_type }}
+data-ciphers={{ data_ciphers }}
+password-flags={{ password_flags }}
+port={{ port }}
+{%- if proto_tcp %}
+proto-tcp=yes
+{%- endif %}
+remote={{ remote }}
+remote-cert-tls={{ remote_cert_tls }}
+reneg-seconds={{ reneg_seconds }}
+tunnel-mtu={{ tunnel_mtu }}
+username={{ username }}
+verify-x509-name={{ verify_x509_name }}
+service-type=org.freedesktop.NetworkManager.openvpn
+
+[ipv4]
+dns-priority={{ dns_priority }}
+dns-search={{ dns_search }}
+method=auto
+never-default={{ 'true' if never_default else 'false' }}
+route-table={{ route_table }}
+routing-rule1={{ routing_rule }}
+
+[ipv6]
+addr-gen-mode=stable-privacy
+method=auto
+never-default={{ 'true' if never_default else 'false' }}
+
+[proxy]
