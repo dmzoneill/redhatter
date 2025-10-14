@@ -1,4 +1,5 @@
 """Password store service for managing GPG-encrypted credentials."""
+
 import logging
 import os
 import subprocess
@@ -26,7 +27,9 @@ class PasswordStoreService:
         Returns:
             Decrypted content as string, or False on error
         """
-        secret_file_path = os.path.join(self.pass_store_path, "redhat.com/" + the_item + ".gpg")
+        secret_file_path = os.path.join(
+            self.pass_store_path, "redhat.com/" + the_item + ".gpg"
+        )
 
         if not os.path.exists(secret_file_path):
             logger.error(f"Error: {secret_file_path} does not exist.")
@@ -37,7 +40,9 @@ class PasswordStoreService:
             with open(secret_file_path, "rb") as f:
                 decrypted_data = self.gpg.decrypt_file(f)
                 if decrypted_data.ok:
-                    logger.debug(f"Password for {the_item} retrieved using gnupg (cached).")
+                    logger.debug(
+                        f"Password for {the_item} retrieved using gnupg (cached)."
+                    )
                     return decrypted_data.data.decode("utf-8")
                 else:
                     logger.error(
@@ -51,7 +56,9 @@ class PasswordStoreService:
         logger.debug(f"Attempting to retrieve {the_item} using pass show...")
         try:
             result = subprocess.run(
-                ["pass", "show", f"redhat.com/{the_item}"], capture_output=True, text=True
+                ["pass", "show", f"redhat.com/{the_item}"],
+                capture_output=True,
+                text=True,
             )
 
             if result.returncode == 0:
@@ -60,7 +67,9 @@ class PasswordStoreService:
                 )
                 return result.stdout.strip()
             else:
-                logger.error(f"Error retrieving password with pass show: {result.stderr}")
+                logger.error(
+                    f"Error retrieving password with pass show: {result.stderr}"
+                )
                 return False
         except Exception as e:
             logger.error(f"Error retrieving password using pass show: {e}")
@@ -113,7 +122,9 @@ class PasswordStoreService:
         Returns:
             True if successful, False otherwise
         """
-        secret_file_path = os.path.join(self.pass_store_path, "redhat.com/" + the_item + ".gpg")
+        secret_file_path = os.path.join(
+            self.pass_store_path, "redhat.com/" + the_item + ".gpg"
+        )
         recipient_key_id = self.get_recipient_key_id()
 
         if not recipient_key_id:
@@ -142,7 +153,9 @@ class PasswordStoreService:
         )
         try:
             result = subprocess.run(
-                ["pass", "show", f"redhat.com/{the_item}"], capture_output=True, text=True
+                ["pass", "show", f"redhat.com/{the_item}"],
+                capture_output=True,
+                text=True,
             )
 
             if result.returncode == 0:
@@ -182,7 +195,9 @@ class PasswordStoreService:
                 )
                 return False
         except Exception as e:
-            logger.error(f"Error encrypting the password with gnupg after fallback: {e}")
+            logger.error(
+                f"Error encrypting the password with gnupg after fallback: {e}"
+            )
             return False
 
     def generate_hotp_token(self):

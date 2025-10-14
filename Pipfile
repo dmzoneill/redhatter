@@ -19,6 +19,7 @@ mypy = "*"
 pytest = "*"
 pytest-asyncio = "*"
 httpx = "*"
+types-pyyaml = "*"
 
 [requires]
 python_version = "3.11"

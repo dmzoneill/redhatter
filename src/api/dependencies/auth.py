@@ -1,4 +1,5 @@
 """Authentication dependencies for FastAPI routes."""
+
 import logging
 from pathlib import Path
 from typing import Optional
@@ -41,6 +42,7 @@ def get_or_create_auth_token() -> str:
 
     # Generate new token
     import secrets
+
     _auth_token = secrets.token_urlsafe(32)
 
     # Save token to file

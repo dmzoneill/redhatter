@@ -4,6 +4,7 @@ Legacy API endpoints for backward compatibility.
 These endpoints maintain compatibility with older Chrome extension versions
 and existing scripts. New code should use the structured API routes instead.
 """
+
 import logging
 
 from fastapi import APIRouter, Depends
@@ -55,7 +56,15 @@ def get_creds(context: str = "associate", headless: bool = False):
 
         try:
             namespace = get_namespace_name(username, headless)
+            if not namespace:
+                logger.error("Failed to retrieve namespace for ephemeral context")
+                return "Failed"
+
             password = get_namespace_password(namespace)
+            if not password:
+                logger.error("Failed to retrieve password for ephemeral namespace")
+                return "Failed"
+
             return f"jdoe,{password}"
         except Exception as e:
             logger.error(f"Failed to get ephemeral credentials: {e}")

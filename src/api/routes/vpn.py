@@ -1,4 +1,5 @@
 """VPN-related API routes."""
+
 import logging
 import subprocess
 from pathlib import Path
@@ -33,11 +34,13 @@ from api.dependencies.auth import verify_token as get_verify_token
 
 
 @router.get("/profiles", response_model=List[VPNProfile])
-def list_vpn_profiles(token: str = Depends(get_verify_token)):  # Token verification will be added later
+def list_vpn_profiles(
+    token: str = Depends(get_verify_token),
+):  # Token verification will be added later
     """List all configured VPN profiles."""
     try:
         config = load_vpn_profiles()
-        profiles = config.get('profiles', [])
+        profiles = config.get("profiles", [])
         return profiles
     except Exception as e:
         logger.error(f"Error loading VPN profiles: {e}")
@@ -49,11 +52,13 @@ def get_vpn_profile(profile_id: str, token: str = Depends(get_verify_token)):
     """Get details for a specific VPN profile."""
     try:
         config = load_vpn_profiles()
-        profiles = config.get('profiles', [])
+        profiles = config.get("profiles", [])
 
         profile = find_profile_by_id(profiles, profile_id)
         if not profile:
-            raise HTTPException(status_code=404, detail=f"Profile '{profile_id}' not found")
+            raise HTTPException(
+                status_code=404, detail=f"Profile '{profile_id}' not found"
+            )
 
         return profile
     except HTTPException:
@@ -79,57 +84,53 @@ def get_default_vpn(token: str = Depends(get_verify_token)):
         if not uuid:
             logger.info("No default VPN UUID found, initializing to GLOBAL profile")
             config = load_vpn_profiles()
-            profiles = config.get('profiles', [])
+            profiles = config.get("profiles", [])
             global_profile = get_global_profile(profiles)
 
             if not global_profile:
                 raise HTTPException(
-                    status_code=404,
-                    detail="GLOBAL profile not found in profiles.yaml"
+                    status_code=404, detail="GLOBAL profile not found in profiles.yaml"
                 )
 
-            if not global_profile.get('uuid'):
+            if not global_profile.get("uuid"):
                 raise HTTPException(
                     status_code=500,
-                    detail="GLOBAL profile does not have a UUID configured"
+                    detail="GLOBAL profile does not have a UUID configured",
                 )
 
-            uuid = global_profile['uuid']
+            uuid = global_profile["uuid"]
 
             # Save it to password store
             if not set_default_vpn_uuid(password_store, uuid):
                 raise HTTPException(
                     status_code=500,
-                    detail="Failed to initialize default VPN UUID in password store"
+                    detail="Failed to initialize default VPN UUID in password store",
                 )
 
             return VPNDefaultInfo(
                 uuid=uuid,
-                profile_id=global_profile['id'],
-                profile_name=global_profile['name'],
-                source="password_store (initialized)"
+                profile_id=global_profile["id"],
+                profile_name=global_profile["name"],
+                source="password_store (initialized)",
             )
 
         # UUID exists, try to find matching profile
         config = load_vpn_profiles()
-        profiles = config.get('profiles', [])
+        profiles = config.get("profiles", [])
         profile = find_profile_by_uuid(profiles, uuid)
 
         if profile:
             return VPNDefaultInfo(
                 uuid=uuid,
-                profile_id=profile['id'],
-                profile_name=profile['name'],
-                source="password_store"
+                profile_id=profile["id"],
+                profile_name=profile["name"],
+                source="password_store",
             )
         else:
             # UUID exists but doesn't match any profile
             logger.warning(f"Default VPN UUID {uuid} does not match any known profile")
             return VPNDefaultInfo(
-                uuid=uuid,
-                profile_id=None,
-                profile_name=None,
-                source="password_store"
+                uuid=uuid, profile_id=None, profile_name=None, source="password_store"
             )
 
     except HTTPException:
@@ -140,7 +141,9 @@ def get_default_vpn(token: str = Depends(get_verify_token)):
 
 
 @router.post("/default")
-def set_default_vpn(request: VPNSetDefaultRequest, token: str = Depends(get_verify_token)):
+def set_default_vpn(
+    request: VPNSetDefaultRequest, token: str = Depends(get_verify_token)
+):
     """
     Set the default VPN profile.
 
@@ -149,7 +152,7 @@ def set_default_vpn(request: VPNSetDefaultRequest, token: str = Depends(get_veri
     """
     try:
         config = load_vpn_profiles()
-        profiles = config.get('profiles', [])
+        profiles = config.get("profiles", [])
 
         target_uuid = None
 
@@ -158,36 +161,34 @@ def set_default_vpn(request: VPNSetDefaultRequest, token: str = Depends(get_veri
             profile = find_profile_by_id(profiles, request.profile_id)
             if not profile:
                 raise HTTPException(
-                    status_code=404,
-                    detail=f"Profile '{request.profile_id}' not found"
+                    status_code=404, detail=f"Profile '{request.profile_id}' not found"
                 )
 
-            if not profile.get('uuid'):
+            if not profile.get("uuid"):
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Profile '{request.profile_id}' does not have a UUID configured"
+                    detail=f"Profile '{request.profile_id}' does not have a UUID configured",
                 )
 
-            target_uuid = profile['uuid']
-            profile_name = profile['name']
+            target_uuid = profile["uuid"]
+            profile_name = profile["name"]
 
         elif request.uuid:
             target_uuid = request.uuid
             # Try to find profile by UUID for response info
             profile = find_profile_by_uuid(profiles, request.uuid)
-            profile_name = profile['name'] if profile else None
+            profile_name = profile["name"] if profile else None
 
         else:
             raise HTTPException(
-                status_code=400,
-                detail="Either profile_id or uuid must be provided"
+                status_code=400, detail="Either profile_id or uuid must be provided"
             )
 
         # Update password store
         if not set_default_vpn_uuid(password_store, target_uuid):
             raise HTTPException(
                 status_code=500,
-                detail="Failed to update default VPN UUID in password store"
+                detail="Failed to update default VPN UUID in password store",
             )
 
         logger.info(f"Default VPN set to UUID: {target_uuid}")
@@ -196,7 +197,7 @@ def set_default_vpn(request: VPNSetDefaultRequest, token: str = Depends(get_veri
             "success": True,
             "message": f"Default VPN set to {profile_name if profile_name else target_uuid}",
             "uuid": target_uuid,
-            "profile_name": profile_name
+            "profile_name": profile_name,
         }
 
     except HTTPException:
@@ -233,17 +234,11 @@ def connect_vpn_default(token: str = Depends(get_verify_token)):
                 break
 
         if not script_path:
-            raise HTTPException(
-                status_code=404,
-                detail="vpn-connect script not found"
-            )
+            raise HTTPException(status_code=404, detail="vpn-connect script not found")
 
         # Execute the script without UUID parameter (uses default from password store)
         result = subprocess.run(
-            [str(script_path)],
-            capture_output=True,
-            text=True,
-            timeout=60
+            [str(script_path)], capture_output=True, text=True, timeout=60
         )
 
         if result.returncode == 0:
@@ -251,14 +246,13 @@ def connect_vpn_default(token: str = Depends(get_verify_token)):
             return {
                 "success": True,
                 "message": "Connected to default VPN",
-                "method": "default"
+                "method": "default",
             }
         else:
             error_msg = result.stderr or result.stdout or "Connection failed"
             logger.error(f"Default VPN connect failed: {error_msg}")
             raise HTTPException(
-                status_code=500,
-                detail=f"Failed to connect: {error_msg}"
+                status_code=500, detail=f"Failed to connect: {error_msg}"
             )
 
     except subprocess.TimeoutExpired:
@@ -303,16 +297,12 @@ def connect_vpn_shuttle(token: str = Depends(get_verify_token)):
 
         if not script_path:
             raise HTTPException(
-                status_code=404,
-                detail="vpn-connect-shuttle script not found"
+                status_code=404, detail="vpn-connect-shuttle script not found"
             )
 
         # Execute the script
         result = subprocess.run(
-            [str(script_path)],
-            capture_output=True,
-            text=True,
-            timeout=60
+            [str(script_path)], capture_output=True, text=True, timeout=60
         )
 
         if result.returncode == 0:
@@ -320,14 +310,13 @@ def connect_vpn_shuttle(token: str = Depends(get_verify_token)):
             return {
                 "success": True,
                 "message": "Connected to VPN (shuttle)",
-                "method": "shuttle"
+                "method": "shuttle",
             }
         else:
             error_msg = result.stderr or result.stdout or "Connection failed"
             logger.error(f"VPN shuttle connect failed: {error_msg}")
             raise HTTPException(
-                status_code=500,
-                detail=f"Failed to connect: {error_msg}"
+                status_code=500, detail=f"Failed to connect: {error_msg}"
             )
 
     except subprocess.TimeoutExpired:
@@ -343,22 +332,24 @@ def connect_vpn_profile(profile_id: str, token: str = Depends(get_verify_token))
     """Connect to a specific VPN profile using the vpn-connect script."""
     try:
         config = load_vpn_profiles()
-        profiles = config.get('profiles', [])
+        profiles = config.get("profiles", [])
 
         # Find profile by ID (case-insensitive)
         target_profile = find_profile_by_id(profiles, profile_id)
 
         if not target_profile:
-            raise HTTPException(status_code=404, detail=f"Profile '{profile_id}' not found")
+            raise HTTPException(
+                status_code=404, detail=f"Profile '{profile_id}' not found"
+            )
 
         # Get UUID from the profile
-        profile_uuid = target_profile.get('uuid')
-        profile_name = target_profile.get('name')
+        profile_uuid = target_profile.get("uuid")
+        profile_name = target_profile.get("name")
 
         if not profile_uuid:
             raise HTTPException(
                 status_code=400,
-                detail=f"Profile '{profile_id}' does not have a UUID configured"
+                detail=f"Profile '{profile_id}' does not have a UUID configured",
             )
 
         # Find the vpn-connect script (relative to this file)
@@ -379,34 +370,32 @@ def connect_vpn_profile(profile_id: str, token: str = Depends(get_verify_token))
                 break
 
         if not script_path:
-            raise HTTPException(
-                status_code=404,
-                detail="vpn-connect script not found"
-            )
+            raise HTTPException(status_code=404, detail="vpn-connect script not found")
 
         # Execute vpn-connect script with the UUID
         result = subprocess.run(
             [str(script_path), "--uuid", profile_uuid],
             capture_output=True,
             text=True,
-            timeout=60
+            timeout=60,
         )
 
         if result.returncode == 0:
-            logger.info(f"Connected to VPN profile: {profile_name} (UUID: {profile_uuid})")
+            logger.info(
+                f"Connected to VPN profile: {profile_name} (UUID: {profile_uuid})"
+            )
             return {
                 "success": True,
                 "message": f"Connected to {profile_name}",
                 "profile_id": profile_id,
                 "profile_name": profile_name,
-                "uuid": profile_uuid
+                "uuid": profile_uuid,
             }
         else:
             error_msg = result.stderr or result.stdout or "Connection failed"
             logger.error(f"Failed to connect to VPN: {error_msg}")
             raise HTTPException(
-                status_code=500,
-                detail=f"Failed to connect: {error_msg}"
+                status_code=500, detail=f"Failed to connect: {error_msg}"
             )
 
     except HTTPException:
@@ -430,15 +419,20 @@ def disconnect_vpn(token: str = Depends(get_verify_token)):
             return {
                 "success": True,
                 "message": "No active VPN connection",
-                "was_connected": False
+                "was_connected": False,
             }
 
         # Disconnect using connection name
         conn_name = status.get("profile_name")
+        if not conn_name:
+            raise HTTPException(
+                status_code=500, detail="Could not determine VPN connection name"
+            )
+
         result = subprocess.run(
-            ["nmcli", "connection", "down", "id", conn_name],
+            ["nmcli", "connection", "down", "id", str(conn_name)],
             capture_output=True,
-            text=True
+            text=True,
         )
 
         if result.returncode == 0:
@@ -446,14 +440,13 @@ def disconnect_vpn(token: str = Depends(get_verify_token)):
             return {
                 "success": True,
                 "message": f"Disconnected from {conn_name}",
-                "was_connected": True
+                "was_connected": True,
             }
         else:
             error_msg = result.stderr or result.stdout
             logger.error(f"Failed to disconnect VPN: {error_msg}")
             raise HTTPException(
-                status_code=500,
-                detail=f"Failed to disconnect: {error_msg}"
+                status_code=500, detail=f"Failed to disconnect: {error_msg}"
             )
 
     except HTTPException:
@@ -473,21 +466,22 @@ def get_vpn_status(token: str = Depends(get_verify_token)):
         profile_id = None
         if status.get("connected"):
             config = load_vpn_profiles()
-            profiles = config.get('profiles', [])
+            profiles = config.get("profiles", [])
             conn_name = status.get("profile_name", "")
 
             # Try to match by name or UUID
             for profile in profiles:
-                if (profile.get('name') == conn_name or
-                    profile.get('uuid') == status.get("connection_uuid")):
-                    profile_id = profile['id']
+                if profile.get("name") == conn_name or profile.get(
+                    "uuid"
+                ) == status.get("connection_uuid"):
+                    profile_id = profile["id"]
                     break
 
         return VPNStatus(
             connected=status.get("connected", False),
             profile_name=status.get("profile_name"),
             profile_id=profile_id,
-            connection_details=status
+            connection_details=status,
         )
 
     except Exception as e:

@@ -3,11 +3,12 @@
 This module handles interactions with external Kubernetes instances
 where ephemeral pipelines are run (bonfire/OpenShift environments).
 """
+
 import base64
 import json
 import logging
 import subprocess
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 from fastapi import HTTPException
 
@@ -26,11 +27,7 @@ def run_command(cmd: str) -> Tuple[bool, str, str]:
     """
     try:
         proc = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            shell=True,
-            text=True
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, text=True
         )
         stdout, stderr = proc.communicate()
         success = proc.returncode == 0
@@ -106,7 +103,7 @@ def get_namespace_password(namespace: str) -> Optional[str]:
         return None
 
 
-def get_namespace_list(username: str, headless: bool = True) -> Optional[list]:
+def get_namespace_list(username: str, headless: bool = True) -> Optional[List[str]]:
     """
     Get list of namespaces for a user from bonfire.
 
@@ -123,7 +120,10 @@ def get_namespace_list(username: str, headless: bool = True) -> Optional[list]:
             "/usr/local/bin/oc project | awk -F'\"' '{print $4}'"
         )
 
-        if success and server != "https://api.c-rh-c-eph.8p0c.p1.openshiftapps.com:6443":
+        if (
+            success
+            and server != "https://api.c-rh-c-eph.8p0c.p1.openshiftapps.com:6443"
+        ):
             # Need to login to ephemeral environment
             headless_flag = "--headless" if headless else ""
             subprocess.call(f"/usr/local/bin/rhtoken e {headless_flag}", shell=True)

@@ -1,4 +1,5 @@
 """Pydantic models for ephemeral namespace operations."""
+
 from typing import Optional
 
 from pydantic import BaseModel, Field
@@ -10,13 +11,17 @@ class NamespaceDetails(BaseModel):
     name: str = Field(..., description="Namespace name")
     route: Optional[str] = Field(None, description="Namespace route/URL")
     expires: Optional[str] = Field(None, description="Expiration timestamp")
-    password: Optional[str] = Field(None, description="Namespace password (if requested)")
+    password: Optional[str] = Field(
+        None, description="Namespace password (if requested)"
+    )
 
 
 class NamespaceExtendRequest(BaseModel):
     """Request to extend namespace duration."""
 
-    duration: str = Field(default="72h", description="Duration to extend (e.g., '72h', '48h')")
+    duration: str = Field(
+        default="72h", description="Duration to extend (e.g., '72h', '48h')"
+    )
 
 
 class NamespaceStatus(BaseModel):

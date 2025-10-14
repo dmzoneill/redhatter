@@ -1,7 +1,8 @@
 """Common dependencies and utilities for API routes."""
+
 import logging
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable, Optional, cast
 
 from fastapi import HTTPException
 
@@ -23,13 +24,14 @@ def get_username_from_store() -> str:
     username = password_store.get_from_store("username")
     if not username:
         raise HTTPException(
-            status_code=500,
-            detail="Failed to retrieve username from password store"
+            status_code=500, detail="Failed to retrieve username from password store"
         )
-    return username.strip()
+    return cast(str, username.strip())
 
 
-def find_script_path(script_name: str, search_paths: Optional[list[Path]] = None) -> Path:
+def find_script_path(
+    script_name: str, search_paths: Optional[list[Path]] = None
+) -> Path:
     """
     Find a script in common locations.
 
@@ -62,7 +64,7 @@ def find_script_path(script_name: str, search_paths: Optional[list[Path]] = None
 
     raise HTTPException(
         status_code=404,
-        detail=f"{script_name} script not found in any of the expected locations"
+        detail=f"{script_name} script not found in any of the expected locations",
     )
 
 
@@ -80,6 +82,7 @@ def handle_api_errors(func: Callable):
             # Implementation
             pass
     """
+
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)

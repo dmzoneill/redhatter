@@ -1,27 +1,26 @@
 #!/usr/bin/env python3
 
 import argparse
+import json
 import os
+import re
+import shlex
+import shutil
+import signal
+import stat
 import subprocess
 import sys
-import signal
-import requests
 import time
 import urllib.request
 import zipfile
-import shutil
-import shlex
-import stat
-import re
-import json
-from pathlib import Path
+
+import requests
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
 
@@ -37,8 +36,6 @@ login_process = None
 
 
 def cleanup(signum=None, frame=None):
-    global driver, login_process
-
     print("\n[INFO] Cleaning up before exit...")
 
     if driver:
@@ -64,15 +61,38 @@ signal.signal(signal.SIGTERM, cleanup)
 
 
 def get_credentials_from_endpoint():
+    """
+    Get credentials from FastAPI endpoint.
+
+    Reads auth token from ~/.cache/rhotp/auth_token and uses it for authentication.
+    """
     creds_url = "http://localhost:8009/get_creds?context=associate&headless=false"
+
+    # Read auth token from cache
+    token_file = os.path.expanduser("~/.cache/rhotp/auth_token")
     try:
-        response = requests.get(creds_url)
+        with open(token_file, 'r') as f:
+            auth_token = f.read().strip()
+    except FileNotFoundError:
+        print(f"Error: Auth token file not found at {token_file}")
+        print("Make sure the RHOTP service has been started at least once.")
+        return None, None
+    except Exception as e:
+        print(f"Error reading auth token: {e}")
+        return None, None
+
+    # Make authenticated API request
+    try:
+        headers = {
+            'Authorization': f'Bearer {auth_token}'
+        }
+        response = requests.get(creds_url, headers=headers, timeout=5)
         response.raise_for_status()
         creds = response.text.strip().split('"')
         username, password = creds[1].split(",")
         return username.strip(), password.strip()
     except requests.RequestException as e:
-        print(f"Error fetching credentials: {e}")
+        print(f"Error fetching credentials from API: {e}")
         return None, None
 
 
@@ -225,7 +245,6 @@ def get_token_string():
 
         Button = wait_until_found(lambda: driver.find_element(By.XPATH, '//button'))
         Button.click()
-
 
         # Get the command from the page
         Pre = wait_until_found(lambda: driver.find_element(By.XPATH, '//pre').text)

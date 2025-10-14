@@ -5,6 +5,7 @@ Main entry point for the Red Hat OTP Auto-Connect service.
 Provides API endpoints for VPN management, credential retrieval,
 and ephemeral environment management.
 """
+
 import logging
 
 from fastapi import FastAPI
@@ -17,8 +18,7 @@ from api.routes import ephemeral, legacy, token, vpn
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -45,9 +45,9 @@ async def startup_event():
     token = get_or_create_auth_token()
     logger.info("=" * 60)
     logger.info("RH-OTP Auto-Connect Service started")
-    logger.info(f"Version: 2.0.0")
+    logger.info("Version: 2.0.0")
     logger.info(f"Authentication token: {token[:8]}...")
-    logger.info(f"API Documentation: http://localhost:8009/docs")
+    logger.info("API Documentation: http://localhost:8009/docs")
     logger.info("=" * 60)
 
 
@@ -65,11 +65,7 @@ def health_check():
     Returns:
         Simple message indicating service is running
     """
-    return {
-        "status": "healthy",
-        "service": "RH-OTP Auto-Connect",
-        "version": "2.0.0"
-    }
+    return {"status": "healthy", "service": "RH-OTP Auto-Connect", "version": "2.0.0"}
 
 
 @app.get("/ping", tags=["health"])
