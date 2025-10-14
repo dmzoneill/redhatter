@@ -129,6 +129,24 @@ class RHOTPIndicator extends PanelMenu.Button {
         // Separator
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
+        // Cluster section
+        const clusterSection = new PopupMenu.PopupMenuSection();
+
+        // Cluster Terminal submenu - dynamically populated with terminal icon
+        this._clusterTerminalSubmenu = new PopupMenu.PopupSubMenuMenuItem('Cluster Terminal', true);
+        this._clusterTerminalSubmenu.icon.icon_name = 'utilities-terminal-symbolic';
+        clusterSection.addMenuItem(this._clusterTerminalSubmenu);
+
+        // Cluster Web submenu - dynamically populated with browser icon
+        this._clusterWebSubmenu = new PopupMenu.PopupSubMenuMenuItem('Cluster Web Console', true);
+        this._clusterWebSubmenu.icon.icon_name = 'web-browser-symbolic';
+        clusterSection.addMenuItem(this._clusterWebSubmenu);
+
+        this.menu.addMenuItem(clusterSection);
+
+        // Separator
+        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+
         // VPN section
         const vpnSection = new PopupMenu.PopupMenuSection();
 
@@ -208,6 +226,9 @@ class RHOTPIndicator extends PanelMenu.Button {
 
         // Fetch default VPN profile information
         this._fetchDefaultVPN();
+
+        // Load cluster menus
+        this._loadClusters();
 
         // Set up periodic VPN status checking every 30 seconds
         this._vpnCheckInterval = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 30, () => {
@@ -1019,6 +1040,148 @@ class RHOTPIndicator extends PanelMenu.Button {
         }
     }
 
+    _transformOAuthToConsoleUrl(oauthUrl) {
+        /**
+         * Transform OAuth URL to console URL
+         * From: https://oauth-openshift.apps.crcs02ue1.urby.p1.openshiftapps.com/oauth/token/request
+         * To:   https://console-openshift-console.apps.crcs02ue1.urby.p1.openshiftapps.com/
+         */
+        try {
+            // Replace oauth-openshift with console-openshift-console and remove the path
+            const consoleUrl = oauthUrl
+                .replace('oauth-openshift.apps.', 'console-openshift-console.apps.')
+                .replace('/oauth/token/request', '/');
+            return consoleUrl;
+        } catch (error) {
+            console.log(`RH-OTP: Error transforming URL: ${error.message}`);
+            return oauthUrl;
+        }
+    }
+
+    async _loadClusters() {
+        try {
+            // Get auth token
+            const token = await this._getAuthToken();
+            if (!token) {
+                console.log('RH-OTP: Cannot load clusters - no auth token');
+                return;
+            }
+
+            // Fetch clusters from API
+            const url = `${this._settings.apiUrl}/token/clusters`;
+            const clusters = await this._makeAuthenticatedJsonRequest(url, token);
+
+            console.log(`RH-OTP: Retrieved ${clusters.length} clusters from API`);
+
+            // Clear existing items
+            this._clusterTerminalSubmenu.menu.removeAll();
+            this._clusterWebSubmenu.menu.removeAll();
+
+            if (!clusters || clusters.length === 0) {
+                const noClusterItem = new PopupMenu.PopupMenuItem('No clusters available', { reactive: false });
+                this._clusterTerminalSubmenu.menu.addMenuItem(noClusterItem);
+
+                const noClusterItem2 = new PopupMenu.PopupMenuItem('No clusters available', { reactive: false });
+                this._clusterWebSubmenu.menu.addMenuItem(noClusterItem2);
+                return;
+            }
+
+            // Sort clusters by name
+            const sortedClusters = [...clusters].sort((a, b) => a.name.localeCompare(b.name));
+
+            // Populate Terminal submenu
+            for (const cluster of sortedClusters) {
+                const terminalItem = new PopupMenu.PopupMenuItem(cluster.name);
+                terminalItem.connect('activate', () => {
+                    this._openClusterTerminal(cluster);
+                });
+                this._clusterTerminalSubmenu.menu.addMenuItem(terminalItem);
+            }
+
+            // Populate Web Console submenu
+            for (const cluster of sortedClusters) {
+                const webItem = new PopupMenu.PopupMenuItem(cluster.name);
+                webItem.connect('activate', () => {
+                    this._openClusterWeb(cluster);
+                });
+                this._clusterWebSubmenu.menu.addMenuItem(webItem);
+            }
+
+        } catch (error) {
+            console.log(`RH-OTP: Error loading clusters: ${error.message}`);
+
+            const errorItem = new PopupMenu.PopupMenuItem(`Error: ${error.message}`, { reactive: false });
+            this._clusterTerminalSubmenu.menu.addMenuItem(errorItem);
+
+            const errorItem2 = new PopupMenu.PopupMenuItem(`Error: ${error.message}`, { reactive: false });
+            this._clusterWebSubmenu.menu.addMenuItem(errorItem2);
+        }
+    }
+
+    async _openClusterTerminal(cluster) {
+        this._updateStatus(`Opening terminal for ${cluster.name}...`, true);
+
+        try {
+            // Get auth token
+            const token = await this._getAuthToken();
+            if (!token) {
+                throw new Error('Failed to get authentication token');
+            }
+
+            // Get the oc login command from the API
+            const url = `${this._settings.apiUrl}/token/oc-login?env=${cluster.cluster_id}&headless=true`;
+            const response = await this._makeAuthenticatedJsonRequest(url, token);
+
+            const ocCommand = response.command;
+
+            // Open a terminal and execute the oc login command
+            // Use gnome-terminal with -- bash -c to execute the command
+            const terminalCommand = [
+                'gnome-terminal',
+                '--',
+                'bash',
+                '-c',
+                `${ocCommand}; echo ''; echo 'Press Enter to close...'; read`
+            ];
+
+            await execCommunicate(terminalCommand);
+
+            this._updateStatus(`Terminal opened for ${cluster.name}`);
+            if (this._settings.autoNotifications) {
+                this._showNotification('Cluster Terminal', `Opened terminal for ${cluster.name}`);
+            }
+
+        } catch (error) {
+            console.log(`RH-OTP: Error opening cluster terminal: ${error.message}`);
+            this._updateStatus(`Failed to open terminal: ${error.message}`);
+            this._showNotification('Cluster Terminal Failed', error.message);
+        }
+    }
+
+    async _openClusterWeb(cluster) {
+        this._updateStatus(`Opening web console for ${cluster.name}...`, true);
+
+        try {
+            // Transform the OAuth URL to the console URL
+            const consoleUrl = this._transformOAuthToConsoleUrl(cluster.url);
+
+            console.log(`RH-OTP: Opening web console: ${consoleUrl}`);
+
+            // Open the URL in the default browser
+            const command = ['xdg-open', consoleUrl];
+            await execCommunicate(command);
+
+            this._updateStatus(`Web console opened for ${cluster.name}`);
+            if (this._settings.autoNotifications) {
+                this._showNotification('Cluster Web Console', `Opened web console for ${cluster.name}`);
+            }
+
+        } catch (error) {
+            console.log(`RH-OTP: Error opening cluster web console: ${error.message}`);
+            this._updateStatus(`Failed to open web console: ${error.message}`);
+            this._showNotification('Cluster Web Console Failed', error.message);
+        }
+    }
 
     destroy() {
         // Clean up interval
