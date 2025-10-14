@@ -13,12 +13,14 @@ graph TB
     subgraph "FastAPI Service :8009"
         API[FastAPI App<br/>main.py]
         VPNRoutes[VPN Routes<br/>/vpn/*]
+        TokenRoutes[Token Routes<br/>/token/*]
         EphemRoutes[Ephemeral Routes<br/>/ephemeral/*]
         LegacyRoutes[Legacy Routes<br/>/get_creds, etc]
     end
 
     subgraph "Services Layer"
         VPNSvc[VPN Service<br/>vpn.py]
+        ClusterMgr[Cluster Config Manager<br/>cluster_config.py]
         EphSvc[Ephemeral Service<br/>ephemeral.py]
         PassSvc[Password Store Service<br/>password_store.py]
     end
@@ -28,6 +30,7 @@ graph TB
         Pass[Password Store<br/>pass + GPG]
         Bonfire[Bonfire CLI<br/>OpenShift]
         OC[oc/kubectl<br/>Kubernetes]
+        rhtoken[rhtoken script<br/>Selenium + Chrome]
     end
 
     subgraph "Authentication"
@@ -43,21 +46,27 @@ graph TB
     GNOME --> CLI
 
     API --> VPNRoutes
+    API --> TokenRoutes
     API --> EphemRoutes
     API --> LegacyRoutes
 
     VPNRoutes --> VPNSvc
+    TokenRoutes --> ClusterMgr
+    TokenRoutes --> rhtoken
     EphemRoutes --> EphSvc
     LegacyRoutes --> PassSvc
 
     VPNSvc --> NM
     VPNSvc --> Pass
+    ClusterMgr --> Pass
+    rhtoken --> PassSvc
     EphSvc --> Bonfire
     EphSvc --> OC
     PassSvc --> Pass
 
     style API fill:#4CAF50
     style VPNSvc fill:#2196F3
+    style ClusterMgr fill:#2196F3
     style EphSvc fill:#2196F3
     style PassSvc fill:#2196F3
 ```
@@ -162,16 +171,35 @@ graph TB
 
 ---
 
-### 7. OpenShift Token Tool
+### 7. OpenShift Cluster Management
 
-**Component**: `rhtoken` (Selenium-based automation)
+**Components**:
+- **Token Routes** (`api/routes/token.py`)
+- **Cluster Config Manager** (`api/utils/cluster_config.py`)
+- **rhtoken Script**: Selenium-based automation for token acquisition
+- **kubeconfig.sh**: Shell functions for kubeconfig management
 
 **Capabilities**:
-- Auto-install ChromeDriver
-- Automated browser login
-- Token extraction from OAuth pages
-- Support for 6 environments
-- KUBECONFIG integration
+- CRUD operations for cluster configurations (stored in `rhtoken.json`)
+- Search and filter clusters by name, description, URL
+- Get `oc login` commands via automated browser authentication
+- One-click terminal access with persistent KUBECONFIG
+- One-click web console access in default browser
+- Support for 6+ OpenShift environments
+
+**Supported Environments**:
+- **Ephemeral** (`e`) - Temporary dev/test environments
+- **Production** (`p`) - Production OpenShift cluster
+- **Stage** (`s`) - Staging environment
+- **App SRE Production** (`ap`) - Application SRE production
+- **App SRE Stage** (`cp`) - Application SRE staging
+- **Stone Production** (`k`) - Stone production cluster
+
+**Integration**:
+- FastAPI endpoints for cluster management
+- GNOME extension submenus for terminal/web access
+- Automated ChromeDriver download and management
+- Persistent kubeconfig files (~/.kube/config-{env})
 
 ---
 
@@ -443,10 +471,13 @@ rh-otp-auto-connect/
 │   ├── main.py                      # FastAPI application
 │   ├── api/
 │   │   ├── routes/
-│   │   │   ├── vpn.py              # VPN endpoints (17 routes)
+│   │   │   ├── vpn.py              # VPN endpoints (8 routes)
+│   │   │   ├── token.py            # Cluster management (11 routes)
 │   │   │   ├── ephemeral.py        # Ephemeral namespace endpoints
 │   │   │   └── legacy.py           # Backward compatibility
 │   │   ├── models/                  # Pydantic models
+│   │   ├── utils/
+│   │   │   └── cluster_config.py   # Cluster configuration CRUD
 │   │   └── dependencies/
 │   │       ├── auth.py             # Bearer token verification
 │   │       └── common.py           # Shared utilities
@@ -461,7 +492,9 @@ rh-otp-auto-connect/
 │   ├── vpn-connect                 # VPN connection script
 │   ├── vpn-connect-shuttle         # Alternative VPN (SSH tunnel)
 │   ├── vpn-profile-manager         # VPN CLI management tool
-│   ├── rhtoken                     # OpenShift token automation
+│   ├── rhtoken                     # OpenShift token automation (Selenium)
+│   ├── rhtoken.json                # Cluster configuration file
+│   ├── kubeconfig.sh               # Kubeconfig management functions
 │   ├── rh-otp/                     # Chrome extension
 │   │   ├── manifest.json           # Manifest V3
 │   │   ├── background.js           # Service worker
@@ -488,7 +521,7 @@ rh-otp-auto-connect/
 
 ## API Endpoints Summary
 
-### VPN Management (17 endpoints)
+### VPN Management (8 endpoints)
 
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
@@ -500,6 +533,20 @@ rh-otp-auto-connect/
 | POST | `/vpn/connect/{id}` | Connect to specific profile |
 | POST | `/vpn/disconnect` | Disconnect active VPN |
 | GET | `/vpn/status` | Get connection status |
+
+### OpenShift Cluster Management (11 endpoints)
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| GET | `/token/oc-login` | Get oc login command for environment |
+| GET | `/token/clusters` | List all configured clusters |
+| GET | `/token/clusters/search` | Search clusters by query |
+| GET | `/token/clusters/{id}` | Get specific cluster |
+| POST | `/token/clusters/{id}` | Add new cluster |
+| PUT | `/token/clusters/{id}` | Update cluster |
+| DELETE | `/token/clusters/{id}` | Delete cluster |
+| POST | `/token/clusters/{id}/open-terminal` | Open terminal with oc login |
+| POST | `/token/clusters/{id}/open-web` | Open web console in browser |
 
 ### Ephemeral Namespaces (4 endpoints)
 
@@ -640,5 +687,7 @@ See `plans/bonfire_feature_proposal.md` for detailed roadmap.
 - **[API Reference](API.md)** - Detailed endpoint documentation
 - **[User Guide](USER_GUIDE.md)** - end user documentation
 - **[Developer Guide](DEVELOPER_GUIDE.md)** - Development setup and guidelines
-- **[Diagrams](drawings/)** - Additional workflow diagrams
+- **[Authentication Flows](drawings/AUTH_FLOWS.md)** - Authentication and security diagrams
+- **[VPN Workflows](drawings/VPN_WORKFLOWS.md)** - VPN connection diagrams
+- **[Cluster Workflows](drawings/CLUSTER_WORKFLOWS.md)** - OpenShift cluster management diagrams
 - **[Plans](../plans/)** - Feature proposals and design documents

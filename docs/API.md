@@ -437,6 +437,358 @@ curl -H "Authorization: Bearer $TOKEN" \
 
 ---
 
+## OpenShift Cluster & Token Management
+
+### Get OC Login Command
+
+#### GET `/token/oc-login`
+
+Get the `oc login` command for a specified OpenShift environment using the rhtoken script.
+
+**Authentication**: Required
+
+**Query Parameters**:
+- `env` (string, required): Environment identifier
+  - `e` - Ephemeral
+  - `p` - Production
+  - `s` - Stage
+  - `ap` - App SRE Production
+  - `cp` - App SRE Stage
+  - `k` - Stone Production
+- `headless` (boolean, optional, default: true): Run browser in headless mode
+
+**Response**: `200 OK`
+```json
+{
+  "command": "oc login https://api.cluster.openshift.com:6443 --token=sha256~...",
+  "environment": "e",
+  "environment_name": "Ephemeral"
+}
+```
+
+**Errors**:
+- `404 Not Found`: rhtoken script not found
+- `500 Internal Server Error`: Script execution failed
+- `504 Gateway Timeout`: Script took too long (>60s)
+
+**Example**:
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8009/token/oc-login?env=e&headless=true"
+```
+
+**Notes**:
+- Uses `rhtoken` script with `--query` flag
+- Returns the command without executing it
+- Automatically manages Chrome WebDriver download
+
+---
+
+### List All Clusters
+
+#### GET `/token/clusters`
+
+List all configured OpenShift clusters from rhtoken.json.
+
+**Authentication**: Required
+
+**Response**: `200 OK`
+```json
+[
+  {
+    "cluster_id": "e",
+    "name": "Ephemeral",
+    "description": "Ephemeral OpenShift environments",
+    "url": "https://oauth-openshift.apps.crcs02ue1.urby.p1.openshiftapps.com/oauth/token/request"
+  },
+  {
+    "cluster_id": "p",
+    "name": "Production",
+    "description": "Production OpenShift cluster",
+    "url": "https://oauth-openshift.apps.prod.example.com/oauth/token/request"
+  }
+]
+```
+
+**Example**:
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+  http://localhost:8009/token/clusters
+```
+
+---
+
+### Search Clusters
+
+#### GET `/token/clusters/search`
+
+Search clusters by name, description, URL, or ID.
+
+**Authentication**: Required
+
+**Query Parameters**:
+- `q` (string, required): Search query (case-insensitive)
+
+**Response**: `200 OK`
+```json
+[
+  {
+    "cluster_id": "e",
+    "name": "Ephemeral",
+    "description": "Ephemeral OpenShift environments",
+    "url": "https://oauth-openshift.apps.crcs02ue1.urby.p1.openshiftapps.com/oauth/token/request"
+  }
+]
+```
+
+**Example**:
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8009/token/clusters/search?q=ephemeral"
+```
+
+---
+
+### Get Specific Cluster
+
+#### GET `/token/clusters/{cluster_id}`
+
+Get details for a specific cluster configuration.
+
+**Authentication**: Required
+
+**Path Parameters**:
+- `cluster_id` (string, required): Cluster identifier (e.g., "e", "p", "s")
+
+**Response**: `200 OK`
+```json
+{
+  "cluster_id": "e",
+  "name": "Ephemeral",
+  "description": "Ephemeral OpenShift environments",
+  "url": "https://oauth-openshift.apps.crcs02ue1.urby.p1.openshiftapps.com/oauth/token/request"
+}
+```
+
+**Errors**:
+- `404 Not Found`: Cluster does not exist
+
+**Example**:
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+  http://localhost:8009/token/clusters/e
+```
+
+---
+
+### Add New Cluster
+
+#### POST `/token/clusters/{cluster_id}`
+
+Add a new cluster configuration to rhtoken.json.
+
+**Authentication**: Required
+
+**Path Parameters**:
+- `cluster_id` (string, required): Unique cluster identifier (e.g., "dev", "test")
+
+**Request Body**:
+```json
+{
+  "name": "Development Cluster",
+  "description": "Development and testing environment",
+  "url": "https://oauth-openshift.apps.dev.example.com/oauth/token/request"
+}
+```
+
+**Response**: `201 Created`
+```json
+{
+  "cluster_id": "dev",
+  "name": "Development Cluster",
+  "description": "Development and testing environment",
+  "url": "https://oauth-openshift.apps.dev.example.com/oauth/token/request"
+}
+```
+
+**Errors**:
+- `400 Bad Request`: Cluster ID already exists
+- `500 Internal Server Error`: Failed to save configuration
+
+**Example**:
+```bash
+curl -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Development Cluster",
+    "description": "Dev environment",
+    "url": "https://oauth-openshift.apps.dev.example.com/oauth/token/request"
+  }' \
+  http://localhost:8009/token/clusters/dev
+```
+
+---
+
+### Update Cluster
+
+#### PUT `/token/clusters/{cluster_id}`
+
+Update an existing cluster configuration.
+
+**Authentication**: Required
+
+**Path Parameters**:
+- `cluster_id` (string, required): Cluster identifier to update
+
+**Request Body** (all fields optional):
+```json
+{
+  "name": "New Cluster Name",
+  "description": "Updated description",
+  "url": "https://oauth-openshift.apps.newurl.example.com/oauth/token/request"
+}
+```
+
+**Response**: `200 OK`
+```json
+{
+  "cluster_id": "dev",
+  "name": "New Cluster Name",
+  "description": "Updated description",
+  "url": "https://oauth-openshift.apps.newurl.example.com/oauth/token/request"
+}
+```
+
+**Errors**:
+- `404 Not Found`: Cluster does not exist
+- `500 Internal Server Error`: Failed to save configuration
+
+**Example**:
+```bash
+curl -X PUT \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"description": "Updated dev environment"}' \
+  http://localhost:8009/token/clusters/dev
+```
+
+---
+
+### Delete Cluster
+
+#### DELETE `/token/clusters/{cluster_id}`
+
+Delete a cluster configuration from rhtoken.json.
+
+**Authentication**: Required
+
+**Path Parameters**:
+- `cluster_id` (string, required): Cluster identifier to delete
+
+**Response**: `200 OK`
+```json
+{
+  "cluster_id": "dev",
+  "name": "Development Cluster",
+  "description": "Dev environment",
+  "url": "https://oauth-openshift.apps.dev.example.com/oauth/token/request"
+}
+```
+
+**Errors**:
+- `404 Not Found`: Cluster does not exist
+- `500 Internal Server Error`: Failed to save configuration
+
+**Example**:
+```bash
+curl -X DELETE \
+  -H "Authorization: Bearer $TOKEN" \
+  http://localhost:8009/token/clusters/dev
+```
+
+---
+
+### Open Cluster Terminal
+
+#### POST `/token/clusters/{cluster_id}/open-terminal`
+
+Open a terminal window and execute oc login for the specified cluster.
+
+**Authentication**: Required
+
+**Path Parameters**:
+- `cluster_id` (string, required): Cluster identifier (e.g., "e", "p", "s")
+
+**Request Body**: None
+
+**Response**: `200 OK`
+```json
+{
+  "success": "true",
+  "message": "Terminal opened for cluster e"
+}
+```
+
+**Errors**:
+- `404 Not Found`: rhtoken script not found
+- `500 Internal Server Error`: Failed to open terminal
+
+**Example**:
+```bash
+curl -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  http://localhost:8009/token/clusters/e/open-terminal
+```
+
+**Notes**:
+- Opens gnome-terminal with kubeconfig.sh sourced
+- Runs `kube-clean` then `kube` function for fresh authentication
+- Process runs in background (non-blocking)
+- KUBECONFIG environment variable persists in terminal session
+
+---
+
+### Open Cluster Web Console
+
+#### POST `/token/clusters/{cluster_id}/open-web`
+
+Open the OpenShift web console in the default browser.
+
+**Authentication**: Required
+
+**Path Parameters**:
+- `cluster_id` (string, required): Cluster identifier (e.g., "e", "p", "s")
+
+**Request Body**: None
+
+**Response**: `200 OK`
+```json
+{
+  "success": "true",
+  "message": "Web console opened for cluster e",
+  "url": "https://console-openshift-console.apps.crcs02ue1.urby.p1.openshiftapps.com/"
+}
+```
+
+**Errors**:
+- `404 Not Found`: Cluster not found
+- `500 Internal Server Error`: Failed to open browser
+
+**Example**:
+```bash
+curl -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  http://localhost:8009/token/clusters/e/open-web
+```
+
+**Notes**:
+- Automatically transforms OAuth URL to console URL
+- Opens in default browser via `xdg-open`
+- Process runs in background (non-blocking)
+
+---
+
 ## Ephemeral Namespace Management
 
 ### Get Namespace Details

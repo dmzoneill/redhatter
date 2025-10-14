@@ -13,7 +13,7 @@
 [![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](docs/DEVELOPER_GUIDE.md#contributing)
 [![Documentation](https://img.shields.io/badge/docs-comprehensive-blue.svg)](docs/)
 [![VPN Endpoints](https://img.shields.io/badge/VPN%20endpoints-21%20global-red.svg)](docs/USER_GUIDE.md#available-vpn-endpoints)
-[![Diagrams](https://img.shields.io/badge/Mermaid%20diagrams-30+-orange.svg)](docs/drawings/)
+[![Diagrams](https://img.shields.io/badge/Mermaid%20diagrams-40+-orange.svg)](docs/drawings/)
 
 </div>
 
@@ -28,16 +28,19 @@
 - 🖥️ **Desktop Integration** - GNOME Shell extension with system tray
 - 🌍 **Chrome Extension** - Browser automation for Red Hat portals
 - ☁️ **Ephemeral Namespaces** - Bonfire/OpenShift environment management
+- 🎯 **Cluster Management** - OpenShift cluster configuration and access
+- 🖥️ **Terminal Integration** - One-click cluster terminal access
 - 🔒 **Secure Credentials** - GPG-encrypted password storage
 
 <div align="center">
 
 ```
-╔══════════════════════════════════════════════════════════════╗
-║  🎯 One System, Complete VPN & Authentication Automation  ║
-║  ✅ 21 Global Endpoints  •  ✅ Auto SSO Login              ║
-║  ✅ GNOME Integration    •  ✅ Chrome Extension             ║
-╚══════════════════════════════════════════════════════════════╝
+╔══════════════════════════════════════════════════════════════════╗
+║  🎯 One System, Complete Infrastructure Access Automation    ║
+║  ✅ 21 Global VPN Endpoints  •  ✅ Auto SSO Login              ║
+║  ✅ Cluster Management       •  ✅ Terminal Integration        ║
+║  ✅ GNOME Integration        •  ✅ Chrome Extension             ║
+╚══════════════════════════════════════════════════════════════════╝
 ```
 
 </div>
@@ -203,11 +206,12 @@ AMS2            Amsterdam (AMS2)                         ovpn-ams2.redhat.com   
 | **[👨‍💻 Developer Guide](docs/DEVELOPER_GUIDE.md)** | Development setup, testing, contributing |
 | **[🔐 Authentication Flows](docs/drawings/AUTH_FLOWS.md)** | Security and credential diagrams |
 | **[🌐 VPN Workflows](docs/drawings/VPN_WORKFLOWS.md)** | VPN connection diagrams |
+| **[🎯 Cluster Workflows](docs/drawings/CLUSTER_WORKFLOWS.md)** | OpenShift cluster management diagrams |
 | **[📋 Documentation Index](docs/README.md)** | Complete documentation overview |
 
 ### 📝 Documentation Highlights
 
-- **30+ Mermaid Diagrams** - Interactive diagrams that render in GitHub
+- **40+ Mermaid Diagrams** - Interactive diagrams that render in GitHub
 - **4,500+ Lines** - Comprehensive coverage of all components
 - **Code Examples** - Python, Bash, JavaScript samples
 - **Troubleshooting Guides** - Common issues and solutions
@@ -341,6 +345,67 @@ curl -X POST \
 ```
 
 **[Ephemeral Documentation →](docs/USER_GUIDE.md#ephemeral-namespaces)**
+
+---
+
+### 6. OpenShift Cluster Management
+
+**Centralized configuration and access for multiple OpenShift clusters**
+
+**✨ Features**:
+- ✅ CRUD operations for cluster configurations
+- ✅ Search and filter clusters by name, description, or URL
+- ✅ Get `oc login` commands via automated browser authentication
+- ✅ One-click terminal access with persistent KUBECONFIG
+- ✅ One-click web console access in browser
+- ✅ GNOME extension integration with submenus
+
+**🌐 Default Cluster Environments**:
+- **Ephemeral** (`e`) - Temporary dev/test environments
+- **Production** (`p`) - Production OpenShift cluster
+- **Stage** (`s`) - Staging environment
+- **App SRE Production** (`ap`) - App SRE prod cluster
+- **App SRE Stage** (`cp`) - App SRE staging cluster
+- **Stone Production** (`k`) - Stone prod cluster
+
+**💡 Example**:
+```bash
+TOKEN=$(cat ~/.cache/rhotp/auth_token)
+
+# List all configured clusters
+curl -H "Authorization: Bearer $TOKEN" \
+  http://localhost:8009/token/clusters
+
+# Get oc login command for ephemeral environment
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8009/token/oc-login?env=e&headless=true"
+
+# Open terminal for production cluster (GNOME)
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  http://localhost:8009/token/clusters/p/open-terminal
+
+# Open web console for staging cluster
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  http://localhost:8009/token/clusters/s/open-web
+
+# Add a new cluster
+curl -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Development Cluster",
+    "description": "Dev environment",
+    "url": "https://oauth-openshift.apps.dev.example.com/oauth/token/request"
+  }' \
+  http://localhost:8009/token/clusters/dev
+```
+
+**📦 Tools**:
+- `rhtoken` - OpenShift token acquisition script with auto-ChromeDriver management
+- `kubeconfig.sh` - Kubeconfig management functions (`kube`, `kube-clean`)
+- `rhtoken.json` - Cluster configuration file
+
+**[Cluster Workflows Documentation →](docs/drawings/CLUSTER_WORKFLOWS.md)**
 
 ---
 
@@ -614,7 +679,7 @@ Contributions are welcome! Please:
 | **API Endpoints** | 17+ |
 | **VPN Profiles** | 21 global |
 | **Documentation** | 4,500+ lines |
-| **Diagrams** | 30+ Mermaid |
+| **Diagrams** | 40+ Mermaid |
 | **Test Coverage** | Growing |
 
 ---
@@ -679,6 +744,7 @@ This project is licensed under the MIT License - see [LICENSE.txt](LICENSE.txt) 
 | 👨‍💻 **Developer Guide** | [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) |
 | 🔐 **Security Flows** | [docs/drawings/AUTH_FLOWS.md](docs/drawings/AUTH_FLOWS.md) |
 | 🌐 **VPN Workflows** | [docs/drawings/VPN_WORKFLOWS.md](docs/drawings/VPN_WORKFLOWS.md) |
+| 🎯 **Cluster Workflows** | [docs/drawings/CLUSTER_WORKFLOWS.md](docs/drawings/CLUSTER_WORKFLOWS.md) |
 | 📋 **Feature Plans** | [plans/](plans/) |
 
 ---
