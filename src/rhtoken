@@ -13,6 +13,7 @@ import shutil
 import shlex
 import stat
 import re
+import json
 from pathlib import Path
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -22,10 +23,14 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.support import expected_conditions as EC
 
-chrome_driver_dir = str(Path.home() / "bin")
-chrome_driver_location = chrome_driver_dir + "/chromedriver"
-profile_location = "/home/daoneill/.config/google-chrome-beta/Profile 1"
 script_dir = os.path.dirname(os.path.realpath(__file__))
+
+# Load configuration from rhtoken.json
+config = None
+chrome_driver_dir = None
+chrome_driver_location = None
+profile_location = None
+chrome_binary = None
 
 driver = None
 login_process = None
@@ -72,8 +77,6 @@ def get_credentials_from_endpoint():
 
 
 def ensure_chromedriver_matches():
-    chrome_binary = "/opt/google/chrome-beta/google-chrome-beta"
-
     try:
         output = subprocess.check_output([chrome_binary, "--version"], text=True)
         match = re.search(r'(\d+\.\d+\.\d+\.\d+)', output)
@@ -115,6 +118,31 @@ def ensure_chromedriver_matches():
         print(f"[ERROR] Failed to download and install ChromeDriver: {e}")
 
 
+def load_config():
+    """Load configuration from rhtoken.json file."""
+    global config, chrome_driver_dir, chrome_driver_location, profile_location, chrome_binary
+
+    config_path = os.path.join(script_dir, "rhtoken.json")
+    try:
+        with open(config_path, 'r') as f:
+            config = json.load(f)
+
+            # Expand ~ in paths
+            chrome_config = config.get('chrome', {})
+            chrome_driver_dir = os.path.expanduser(chrome_config.get('driver_dir', '~/bin'))
+            chrome_driver_location = os.path.expanduser(chrome_config.get('driver_location', '~/bin/chromedriver'))
+            profile_location = os.path.expanduser(chrome_config.get('profile_location', '~/.config/google-chrome-beta/Profile 1'))
+            chrome_binary = chrome_config.get('binary_location', '/opt/google/chrome-beta/google-chrome-beta')
+
+            return config
+    except FileNotFoundError:
+        print(f"[ERROR] Config file not found: {config_path}")
+        sys.exit(1)
+    except json.JSONDecodeError as e:
+        print(f"[ERROR] Invalid JSON in config: {e}")
+        sys.exit(1)
+
+
 def wait_until_found(find_func, interval=0.5, timeout=30):
     start = time.time()
     while time.time() - start < timeout:
@@ -134,26 +162,29 @@ def get_token_string():
     my_parser = argparse.ArgumentParser(description='Login to Red Hat OSD')
     my_parser.add_argument('env', metavar='env', type=str, help='The environment to get a token')
     my_parser.add_argument('-hl', '--headless', action='store_true', help='Run Selenium in headless mode')
+    my_parser.add_argument('-q', '--query', action='store_true', help='Return the oc login command without executing it')
     args = my_parser.parse_args()
 
-    url_map = {
-        "e": "https://oauth-openshift.apps.crc-eph.r9lp.p1.openshiftapps.com/oauth/token/request",
-        "p": "https://oauth-openshift.apps.crcp01ue1.o9m8.p1.openshiftapps.com/oauth/token/request",
-        "s": "https://oauth-openshift.apps.crcs02ue1.urby.p1.openshiftapps.com/oauth/token/request",
-        "ap": "https://oauth-openshift.apps.appsrep05ue1.zqxk.p1.openshiftapps.com/oauth/token/request",
-        "cp": "https://oauth-openshift.apps.appsres03ue1.5nvu.p1.openshiftapps.com/oauth/token/request",
-        "k": "https://oauth-openshift.apps.stone-prod-p02.hjvn.p1.openshiftapps.com/oauth/token/request"
-    }
+    # Load configuration from rhtoken.json
+    config_data = load_config()
+    clusters = config_data.get('clusters', {})
 
-    url = url_map.get(args.env)
+    # Get cluster configuration
+    cluster = clusters.get(args.env)
+    if not cluster:
+        print(f"Error: Invalid environment '{args.env}' specified.")
+        print(f"Available environments: {', '.join(clusters.keys())}")
+        return
+
+    url = cluster.get('url')
     if not url:
-        print("Error: Invalid environment specified.")
+        print(f"Error: No URL configured for environment '{args.env}'")
         return
 
     ensure_chromedriver_matches()
 
     options = Options()
-    options.binary_location = "/opt/google/chrome-beta/google-chrome-beta"
+    options.binary_location = chrome_binary
     options.add_argument("--user-data-dir=" + profile_location)
     if args.headless:
         options.add_argument('--headless')
@@ -199,6 +230,12 @@ def get_token_string():
         # Get the command from the page
         Pre = wait_until_found(lambda: driver.find_element(By.XPATH, '//pre').text)
         Pre = Pre.replace("('", "").replace("')", "").replace("'", "").replace("\n", "")
+
+        # If query mode, just return the command and exit
+        if args.query:
+            print(Pre)
+            return Pre
+
         parts = shlex.split(Pre)
 
         # Copy current environment
@@ -208,7 +245,7 @@ def get_token_string():
         kubeconfig = os.environ.get("KUBECONFIG")
         if kubeconfig:
             env["KUBECONFIG"] = kubeconfig
-            
+
         # print("rhtoken: " + "\n".join(env))
 
         # Launch subprocess with optional custom env

@@ -1,0 +1,40 @@
+{
+  "chrome": {
+    "driver_dir": "~/bin",
+    "driver_location": "~/bin/chromedriver",
+    "binary_location": "/opt/google/chrome-beta/google-chrome-beta",
+    "profile_location": "/home/daoneill/.config/google-chrome-beta/Profile 1"
+  },
+  "clusters": {
+    "e": {
+      "name": "Ephemeral",
+      "description": "Ephemeral CRC Environment",
+      "url": "https://oauth-openshift.apps.crc-eph.r9lp.p1.openshiftapps.com/oauth/token/request"
+    },
+    "p": {
+      "name": "Production",
+      "description": "Production CRCP01UE1",
+      "url": "https://oauth-openshift.apps.crcp01ue1.o9m8.p1.openshiftapps.com/oauth/token/request"
+    },
+    "s": {
+      "name": "Stage",
+      "description": "Stage CRCS02UE1",
+      "url": "https://oauth-openshift.apps.crcs02ue1.urby.p1.openshiftapps.com/oauth/token/request"
+    },
+    "ap": {
+      "name": "App Production",
+      "description": "App Production APPSREP05UE1",
+      "url": "https://oauth-openshift.apps.appsrep05ue1.zqxk.p1.openshiftapps.com/oauth/token/request"
+    },
+    "cp": {
+      "name": "App Stage",
+      "description": "App Stage APPSRES03UE1",
+      "url": "https://oauth-openshift.apps.appsres03ue1.5nvu.p1.openshiftapps.com/oauth/token/request"
+    },
+    "k": {
+      "name": "Stone Production",
+      "description": "Stone Production P02",
+      "url": "https://oauth-openshift.apps.stone-prod-p02.hjvn.p1.openshiftapps.com/oauth/token/request"
+    }
+  }
+}

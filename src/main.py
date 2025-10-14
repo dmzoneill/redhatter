@@ -13,7 +13,7 @@ from fastapi import FastAPI
 from api.dependencies.auth import get_or_create_auth_token
 
 # Import all routers
-from api.routes import ephemeral, legacy, vpn
+from api.routes import ephemeral, legacy, token, vpn
 
 # Configure logging
 logging.basicConfig(
@@ -34,6 +34,7 @@ app = FastAPI(
 # Include routers
 app.include_router(vpn.router)
 app.include_router(ephemeral.router)
+app.include_router(token.router)
 app.include_router(legacy.router)  # Legacy endpoints for backward compatibility
 
 
