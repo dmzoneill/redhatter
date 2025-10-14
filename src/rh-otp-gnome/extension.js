@@ -83,12 +83,20 @@ class RHOTPIndicator extends PanelMenu.Button {
     
     _getRedHatIcon() {
         try {
-            // Try to use the rh.png from the Chrome extension first
-            const iconPath = '/home/' + GLib.get_user_name() + '/src/rh-otp-auto-connect/src/rh-otp/rh.png';
+            // Use the rh.png from the GNOME extension directory
+            const iconPath = this._extension.path + '/rh.png';
             const iconFile = Gio.File.new_for_path(iconPath);
 
             if (iconFile.query_exists(null)) {
                 return Gio.icon_new_for_string(iconPath);
+            }
+
+            // Fallback to try the Chrome extension directory
+            const altIconPath = '/home/' + GLib.get_user_name() + '/src/rh-otp-auto-connect/src/rh-otp/rh.png';
+            const altIconFile = Gio.File.new_for_path(altIconPath);
+
+            if (altIconFile.query_exists(null)) {
+                return Gio.icon_new_for_string(altIconPath);
             }
         } catch (e) {
             log('RH-OTP: Could not load custom icon, using fallback');
