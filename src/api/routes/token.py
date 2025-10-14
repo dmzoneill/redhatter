@@ -400,83 +400,55 @@ async def open_cluster_terminal(
     - success: Boolean indicating if terminal was opened
     - message: Status message
     """
+    logger.info(f"[open-terminal] Starting request for cluster: {cluster_id}")
+
     try:
         # Get the oc login command
         script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         rhtoken_path = os.path.join(script_dir, "rhtoken")
 
+        logger.debug(f"[open-terminal] Script directory: {script_dir}")
+        logger.debug(f"[open-terminal] rhtoken path: {rhtoken_path}")
+
         if not os.path.exists(rhtoken_path):
+            logger.error(f"[open-terminal] rhtoken script not found at: {rhtoken_path}")
             raise HTTPException(status_code=500, detail="rhtoken script not found")
 
-        # Get oc login command using rhtoken with --query flag
-        cmd = [rhtoken_path, cluster_id, "--query", "--headless"]
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=60,
-            check=True
-        )
+        # Instead of getting the oc login command first (which requires full auth),
+        # just run rhtoken directly in the terminal to let it authenticate interactively
+        logger.info(f"[open-terminal] Opening terminal to run rhtoken for cluster: {cluster_id}")
 
-        # Extract the oc login command from output
-        output = result.stdout.strip()
-        lines = output.split('\n')
-        oc_command = None
-        for line in lines:
-            if line.startswith('oc login'):
-                oc_command = line
-                break
-
-        if not oc_command:
-            # If no line starts with 'oc login', use the last non-empty line
-            for line in reversed(lines):
-                if line.strip() and not line.startswith('['):
-                    oc_command = line.strip()
-                    break
-
-        if not oc_command:
-            raise HTTPException(
-                status_code=500,
-                detail="Could not extract oc login command from rhtoken output"
-            )
-
-        # Open terminal with the oc login command
+        # Open terminal with rhtoken command (no --query flag, so it will authenticate and execute)
         terminal_command = [
             'gnome-terminal',
             '--',
             'bash',
             '-c',
-            f'{oc_command}; echo ""; echo "Press Enter to close..."; read'
+            f'{rhtoken_path} {cluster_id}; echo ""; echo "Press Enter to close..."; read'
         ]
 
-        subprocess.Popen(
+        logger.info(f"[open-terminal] Opening terminal with command: gnome-terminal -- bash -c 'rhtoken {cluster_id}...'")
+        logger.debug(f"[open-terminal] Full terminal command: {terminal_command}")
+
+        # Start the process and immediately return (don't wait for it)
+        process = subprocess.Popen(
             terminal_command,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             start_new_session=True
         )
 
-        logger.info(f"Opened terminal for cluster {cluster_id}")
+        logger.info(f"[open-terminal] Terminal process started with PID: {process.pid}")
+        logger.info(f"[open-terminal] Successfully opened terminal for cluster {cluster_id}")
 
         return {
             "success": True,
             "message": f"Terminal opened for cluster {cluster_id}"
         }
 
-    except subprocess.TimeoutExpired:
-        logger.error(f"rhtoken script timed out for cluster: {cluster_id}")
-        raise HTTPException(
-            status_code=504,
-            detail="Request timed out - rhtoken script took too long to execute"
-        )
-    except subprocess.CalledProcessError as e:
-        logger.error(f"rhtoken script failed: {e.stderr}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"rhtoken script failed: {e.stderr}"
-        )
     except Exception as e:
-        logger.error(f"Error opening terminal for cluster {cluster_id}: {str(e)}")
+        logger.error(f"[open-terminal] Unexpected error for cluster {cluster_id}: {str(e)}")
+        logger.exception("[open-terminal] Full exception traceback:")
         raise HTTPException(status_code=500, detail=f"Failed to open terminal: {str(e)}")
 
 
