@@ -2,18 +2,20 @@
 OpenShift Token API endpoints.
 
 Provides endpoints for retrieving OpenShift login commands
-using the rhtoken script.
+using the rhtoken script and managing cluster configurations.
 """
 import json
 import logging
 import os
 import subprocess
 from enum import Enum
-from typing import Dict
+from typing import Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
 
 from api.dependencies.auth import verify_token
+from api.utils.cluster_config import ClusterConfigManager
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +30,29 @@ class Environment(str, Enum):
     APP_PROD = "ap"
     APP_STAGE = "cp"
     STONE_PROD = "k"
+
+
+# Pydantic models for cluster management
+class ClusterConfig(BaseModel):
+    """Cluster configuration model."""
+    name: str = Field(..., description="Human-readable cluster name")
+    description: str = Field(default="", description="Cluster description")
+    url: str = Field(..., description="OpenShift OAuth token request URL")
+
+
+class ClusterResponse(BaseModel):
+    """Cluster response model."""
+    cluster_id: str = Field(..., description="Cluster identifier")
+    name: str = Field(..., description="Human-readable cluster name")
+    description: str = Field(..., description="Cluster description")
+    url: str = Field(..., description="OpenShift OAuth token request URL")
+
+
+class ClusterUpdateRequest(BaseModel):
+    """Cluster update request model."""
+    name: Optional[str] = Field(None, description="New cluster name")
+    description: Optional[str] = Field(None, description="New cluster description")
+    url: Optional[str] = Field(None, description="New cluster URL")
 
 
 @router.get("/oc-login")
@@ -143,3 +168,206 @@ def _get_env_name(env: str) -> str:
     except Exception as e:
         logger.error(f"Error loading environment name from config: {e}")
         return "Unknown"
+
+
+# Cluster Management Endpoints
+
+@router.get("/clusters", response_model=List[ClusterResponse])
+async def list_clusters(
+    _token: str = Depends(verify_token)
+) -> List[ClusterResponse]:
+    """
+    List all configured OpenShift clusters.
+
+    Returns:
+    - List of all cluster configurations with their IDs, names, descriptions, and URLs
+    """
+    try:
+        manager = ClusterConfigManager()
+        clusters = manager.list_clusters()
+
+        return [
+            ClusterResponse(
+                cluster_id=cluster_id,
+                name=cluster_data.get('name', ''),
+                description=cluster_data.get('description', ''),
+                url=cluster_data.get('url', '')
+            )
+            for cluster_id, cluster_data in clusters.items()
+        ]
+    except Exception as e:
+        logger.error(f"Error listing clusters: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to list clusters: {str(e)}")
+
+
+@router.get("/clusters/search", response_model=List[ClusterResponse])
+async def search_clusters(
+    q: str = Query(..., description="Search query (searches name, description, URL, and ID)"),
+    _token: str = Depends(verify_token)
+) -> List[ClusterResponse]:
+    """
+    Search clusters by name, description, URL, or ID.
+
+    Parameters:
+    - **q**: Search query string (case-insensitive)
+
+    Returns:
+    - List of matching cluster configurations
+    """
+    try:
+        manager = ClusterConfigManager()
+        clusters = manager.search_clusters(q)
+
+        return [
+            ClusterResponse(
+                cluster_id=cluster_id,
+                name=cluster_data.get('name', ''),
+                description=cluster_data.get('description', ''),
+                url=cluster_data.get('url', '')
+            )
+            for cluster_id, cluster_data in clusters.items()
+        ]
+    except Exception as e:
+        logger.error(f"Error searching clusters: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to search clusters: {str(e)}")
+
+
+@router.get("/clusters/{cluster_id}", response_model=ClusterResponse)
+async def get_cluster(
+    cluster_id: str,
+    _token: str = Depends(verify_token)
+) -> ClusterResponse:
+    """
+    Get a specific cluster configuration by ID.
+
+    Parameters:
+    - **cluster_id**: Cluster identifier (e.g., 'e', 'p', 's', 'ap', 'cp', 'k')
+
+    Returns:
+    - Cluster configuration details
+    """
+    try:
+        manager = ClusterConfigManager()
+        cluster = manager.get_cluster(cluster_id)
+
+        if cluster is None:
+            raise HTTPException(status_code=404, detail=f"Cluster '{cluster_id}' not found")
+
+        return ClusterResponse(
+            cluster_id=cluster_id,
+            name=cluster.get('name', ''),
+            description=cluster.get('description', ''),
+            url=cluster.get('url', '')
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting cluster {cluster_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get cluster: {str(e)}")
+
+
+@router.post("/clusters/{cluster_id}", response_model=ClusterResponse, status_code=201)
+async def add_cluster(
+    cluster_id: str,
+    cluster_config: ClusterConfig,
+    _token: str = Depends(verify_token)
+) -> ClusterResponse:
+    """
+    Add a new cluster configuration.
+
+    Parameters:
+    - **cluster_id**: Unique cluster identifier (e.g., 'dev', 'test')
+    - **cluster_config**: Cluster configuration (name, description, url)
+
+    Returns:
+    - The newly created cluster configuration
+    """
+    try:
+        manager = ClusterConfigManager()
+        manager.add_cluster(
+            cluster_id=cluster_id,
+            name=cluster_config.name,
+            url=cluster_config.url,
+            description=cluster_config.description
+        )
+
+        return ClusterResponse(
+            cluster_id=cluster_id,
+            name=cluster_config.name,
+            description=cluster_config.description,
+            url=cluster_config.url
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error adding cluster {cluster_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to add cluster: {str(e)}")
+
+
+@router.put("/clusters/{cluster_id}", response_model=ClusterResponse)
+async def update_cluster(
+    cluster_id: str,
+    update_request: ClusterUpdateRequest,
+    _token: str = Depends(verify_token)
+) -> ClusterResponse:
+    """
+    Update an existing cluster configuration.
+
+    Parameters:
+    - **cluster_id**: Cluster identifier to update
+    - **update_request**: Fields to update (name, description, url)
+
+    Returns:
+    - The updated cluster configuration
+    """
+    try:
+        manager = ClusterConfigManager()
+        updated_cluster = manager.update_cluster(
+            cluster_id=cluster_id,
+            name=update_request.name,
+            url=update_request.url,
+            description=update_request.description
+        )
+
+        return ClusterResponse(
+            cluster_id=cluster_id,
+            name=updated_cluster.get('name', ''),
+            description=updated_cluster.get('description', ''),
+            url=updated_cluster.get('url', '')
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error updating cluster {cluster_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to update cluster: {str(e)}")
+
+
+@router.delete("/clusters/{cluster_id}", response_model=ClusterResponse)
+async def delete_cluster(
+    cluster_id: str,
+    _token: str = Depends(verify_token)
+) -> ClusterResponse:
+    """
+    Delete a cluster configuration.
+
+    Parameters:
+    - **cluster_id**: Cluster identifier to delete
+
+    Returns:
+    - The deleted cluster configuration
+    """
+    try:
+        manager = ClusterConfigManager()
+        deleted_cluster = manager.delete_cluster(cluster_id)
+
+        return ClusterResponse(
+            cluster_id=cluster_id,
+            name=deleted_cluster.get('name', ''),
+            description=deleted_cluster.get('description', ''),
+            url=deleted_cluster.get('url', '')
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error deleting cluster {cluster_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete cluster: {str(e)}")
