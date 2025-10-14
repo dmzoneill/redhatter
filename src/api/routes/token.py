@@ -17,6 +17,16 @@ from pydantic import BaseModel, Field
 from api.dependencies.auth import verify_token
 from api.utils.cluster_config import ClusterConfigManager
 
+
+def transform_oauth_to_console_url(oauth_url: str) -> str:
+    """
+    Transform OAuth URL to console URL.
+
+    From: https://oauth-openshift.apps.crcs02ue1.urby.p1.openshiftapps.com/oauth/token/request
+    To:   https://console-openshift-console.apps.crcs02ue1.urby.p1.openshiftapps.com/
+    """
+    return oauth_url.replace('oauth-openshift.apps.', 'console-openshift-console.apps.').replace('/oauth/token/request', '/')
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/token", tags=["token"])
@@ -371,3 +381,151 @@ async def delete_cluster(
     except Exception as e:
         logger.error(f"Error deleting cluster {cluster_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to delete cluster: {str(e)}")
+
+
+# Cluster Terminal and Web Console Endpoints
+
+@router.post("/clusters/{cluster_id}/open-terminal")
+async def open_cluster_terminal(
+    cluster_id: str,
+    _token: str = Depends(verify_token)
+) -> Dict[str, str]:
+    """
+    Open a terminal window and execute oc login for the specified cluster.
+
+    Parameters:
+    - **cluster_id**: Cluster identifier (e.g., 'e', 'p', 's', 'ap', 'cp', 'k')
+
+    Returns:
+    - success: Boolean indicating if terminal was opened
+    - message: Status message
+    """
+    try:
+        # Get the oc login command
+        script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        rhtoken_path = os.path.join(script_dir, "rhtoken")
+
+        if not os.path.exists(rhtoken_path):
+            raise HTTPException(status_code=500, detail="rhtoken script not found")
+
+        # Get oc login command using rhtoken with --query flag
+        cmd = [rhtoken_path, cluster_id, "--query", "--headless"]
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=60,
+            check=True
+        )
+
+        # Extract the oc login command from output
+        output = result.stdout.strip()
+        lines = output.split('\n')
+        oc_command = None
+        for line in lines:
+            if line.startswith('oc login'):
+                oc_command = line
+                break
+
+        if not oc_command:
+            # If no line starts with 'oc login', use the last non-empty line
+            for line in reversed(lines):
+                if line.strip() and not line.startswith('['):
+                    oc_command = line.strip()
+                    break
+
+        if not oc_command:
+            raise HTTPException(
+                status_code=500,
+                detail="Could not extract oc login command from rhtoken output"
+            )
+
+        # Open terminal with the oc login command
+        terminal_command = [
+            'gnome-terminal',
+            '--',
+            'bash',
+            '-c',
+            f'{oc_command}; echo ""; echo "Press Enter to close..."; read'
+        ]
+
+        subprocess.Popen(
+            terminal_command,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True
+        )
+
+        logger.info(f"Opened terminal for cluster {cluster_id}")
+
+        return {
+            "success": True,
+            "message": f"Terminal opened for cluster {cluster_id}"
+        }
+
+    except subprocess.TimeoutExpired:
+        logger.error(f"rhtoken script timed out for cluster: {cluster_id}")
+        raise HTTPException(
+            status_code=504,
+            detail="Request timed out - rhtoken script took too long to execute"
+        )
+    except subprocess.CalledProcessError as e:
+        logger.error(f"rhtoken script failed: {e.stderr}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"rhtoken script failed: {e.stderr}"
+        )
+    except Exception as e:
+        logger.error(f"Error opening terminal for cluster {cluster_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to open terminal: {str(e)}")
+
+
+@router.post("/clusters/{cluster_id}/open-web")
+async def open_cluster_web(
+    cluster_id: str,
+    _token: str = Depends(verify_token)
+) -> Dict[str, str]:
+    """
+    Open the cluster web console in the default browser.
+
+    Parameters:
+    - **cluster_id**: Cluster identifier (e.g., 'e', 'p', 's', 'ap', 'cp', 'k')
+
+    Returns:
+    - success: Boolean indicating if browser was opened
+    - message: Status message
+    - url: The console URL that was opened
+    """
+    try:
+        # Get cluster configuration
+        manager = ClusterConfigManager()
+        cluster = manager.get_cluster(cluster_id)
+
+        if cluster is None:
+            raise HTTPException(status_code=404, detail=f"Cluster '{cluster_id}' not found")
+
+        # Transform OAuth URL to console URL
+        oauth_url = cluster.get('url', '')
+        console_url = transform_oauth_to_console_url(oauth_url)
+
+        # Open URL in browser
+        subprocess.Popen(
+            ['xdg-open', console_url],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True
+        )
+
+        logger.info(f"Opened web console for cluster {cluster_id}: {console_url}")
+
+        return {
+            "success": True,
+            "message": f"Web console opened for cluster {cluster_id}",
+            "url": console_url
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error opening web console for cluster {cluster_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to open web console: {str(e)}")

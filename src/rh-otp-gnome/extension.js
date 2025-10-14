@@ -1128,27 +1128,50 @@ class RHOTPIndicator extends PanelMenu.Button {
                 throw new Error('Failed to get authentication token');
             }
 
-            // Get the oc login command from the API
-            const url = `${this._settings.apiUrl}/token/oc-login?env=${cluster.cluster_id}&headless=true`;
-            const response = await this._makeAuthenticatedJsonRequest(url, token);
+            // Call the FastAPI endpoint to open terminal
+            const url = `${this._settings.apiUrl}/token/clusters/${cluster.cluster_id}/open-terminal`;
+            const session = new Soup.Session();
+            const message = Soup.Message.new('POST', url);
 
-            const ocCommand = response.command;
+            // Add authorization header
+            message.request_headers.append('Authorization', `Bearer ${token}`);
 
-            // Open a terminal and execute the oc login command
-            // Use gnome-terminal with -- bash -c to execute the command
-            const terminalCommand = [
-                'gnome-terminal',
-                '--',
-                'bash',
-                '-c',
-                `${ocCommand}; echo ''; echo 'Press Enter to close...'; read`
-            ];
+            // Send request
+            const response = await new Promise((resolve, reject) => {
+                session.send_async(message, GLib.PRIORITY_DEFAULT, null, (session, result) => {
+                    try {
+                        const inputStream = session.send_finish(result);
+                        const dataInputStream = new Gio.DataInputStream({
+                            base_stream: inputStream
+                        });
 
-            await execCommunicate(terminalCommand);
+                        let responseText = '';
+                        let line;
+                        while ((line = dataInputStream.read_line(null)[0]) !== null) {
+                            responseText += new TextDecoder().decode(line) + '\n';
+                        }
 
-            this._updateStatus(`Terminal opened for ${cluster.name}`);
-            if (this._settings.autoNotifications) {
-                this._showNotification('Cluster Terminal', `Opened terminal for ${cluster.name}`);
+                        if (message.status_code === 200) {
+                            resolve(responseText);
+                        } else {
+                            reject(new Error(`HTTP ${message.status_code}: ${responseText}`));
+                        }
+                    } catch (e) {
+                        reject(e);
+                    }
+                });
+            });
+
+            // Parse response
+            const result = JSON.parse(response);
+
+            if (result.success) {
+                this._updateStatus(`Terminal opened for ${cluster.name}`);
+                if (this._settings.autoNotifications) {
+                    this._showNotification('Cluster Terminal', `Opened terminal for ${cluster.name}`);
+                }
+            } else {
+                throw new Error(result.message || 'Failed to open terminal');
             }
 
         } catch (error) {
@@ -1162,18 +1185,56 @@ class RHOTPIndicator extends PanelMenu.Button {
         this._updateStatus(`Opening web console for ${cluster.name}...`, true);
 
         try {
-            // Transform the OAuth URL to the console URL
-            const consoleUrl = this._transformOAuthToConsoleUrl(cluster.url);
+            // Get auth token
+            const token = await this._getAuthToken();
+            if (!token) {
+                throw new Error('Failed to get authentication token');
+            }
 
-            console.log(`RH-OTP: Opening web console: ${consoleUrl}`);
+            // Call the FastAPI endpoint to open web console
+            const url = `${this._settings.apiUrl}/token/clusters/${cluster.cluster_id}/open-web`;
+            const session = new Soup.Session();
+            const message = Soup.Message.new('POST', url);
 
-            // Open the URL in the default browser
-            const command = ['xdg-open', consoleUrl];
-            await execCommunicate(command);
+            // Add authorization header
+            message.request_headers.append('Authorization', `Bearer ${token}`);
 
-            this._updateStatus(`Web console opened for ${cluster.name}`);
-            if (this._settings.autoNotifications) {
-                this._showNotification('Cluster Web Console', `Opened web console for ${cluster.name}`);
+            // Send request
+            const response = await new Promise((resolve, reject) => {
+                session.send_async(message, GLib.PRIORITY_DEFAULT, null, (session, result) => {
+                    try {
+                        const inputStream = session.send_finish(result);
+                        const dataInputStream = new Gio.DataInputStream({
+                            base_stream: inputStream
+                        });
+
+                        let responseText = '';
+                        let line;
+                        while ((line = dataInputStream.read_line(null)[0]) !== null) {
+                            responseText += new TextDecoder().decode(line) + '\n';
+                        }
+
+                        if (message.status_code === 200) {
+                            resolve(responseText);
+                        } else {
+                            reject(new Error(`HTTP ${message.status_code}: ${responseText}`));
+                        }
+                    } catch (e) {
+                        reject(e);
+                    }
+                });
+            });
+
+            // Parse response
+            const result = JSON.parse(response);
+
+            if (result.success) {
+                this._updateStatus(`Web console opened for ${cluster.name}`);
+                if (this._settings.autoNotifications) {
+                    this._showNotification('Cluster Web Console', `Opened web console for ${cluster.name} - ${result.url}`);
+                }
+            } else {
+                throw new Error(result.message || 'Failed to open web console');
             }
 
         } catch (error) {
