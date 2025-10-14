@@ -418,16 +418,17 @@ async def open_cluster_terminal(
         # just run rhtoken directly in the terminal to let it authenticate interactively
         logger.info(f"[open-terminal] Opening terminal to run rhtoken for cluster: {cluster_id}")
 
-        # Open terminal with rhtoken command (no --query flag, so it will authenticate and execute)
+        # Open terminal with rhtoken command, then start a new interactive bash shell
+        # This keeps the terminal open after login completes
         terminal_command = [
             'gnome-terminal',
             '--',
             'bash',
             '-c',
-            f'{rhtoken_path} {cluster_id}; echo ""; echo "Press Enter to close..."; read'
+            f'{rhtoken_path} {cluster_id}; exec bash'
         ]
 
-        logger.info(f"[open-terminal] Opening terminal with command: gnome-terminal -- bash -c 'rhtoken {cluster_id}...'")
+        logger.info(f"[open-terminal] Opening terminal with command: gnome-terminal -- bash -c 'rhtoken {cluster_id}; exec bash'")
         logger.debug(f"[open-terminal] Full terminal command: {terminal_command}")
 
         # Start the process and immediately return (don't wait for it)
