@@ -1,3 +1,7 @@
+<p align="center">
+  <img src=".github/logo.png" alt="redhatter logo" width="128" />
+</p>
+
 <div align="center">
 
 <img src="src/rh-otp-gnome/rh.png" alt="Red Hat Logo" width="120"/>
@@ -181,6 +185,7 @@ make vpn-profiles-list
 ```
 
 **Output**:
+
 ```
 Found 21 VPN profiles:
 
@@ -198,16 +203,16 @@ AMS2            Amsterdam (AMS2)                         ovpn-ams2.redhat.com   
 
 ### 🔗 Quick Links
 
-| Document | Description |
-|----------|-------------|
-| **[📖 User Guide](docs/USER_GUIDE.md)** | Installation, usage, troubleshooting |
-| **[🏗️ Architecture](docs/ARCHITECTURE.md)** | System design, components, data flows |
-| **[🔌 API Reference](docs/API.md)** | Complete REST API documentation |
-| **[👨‍💻 Developer Guide](docs/DEVELOPER_GUIDE.md)** | Development setup, testing, contributing |
-| **[🔐 Authentication Flows](docs/drawings/AUTH_FLOWS.md)** | Security and credential diagrams |
-| **[🌐 VPN Workflows](docs/drawings/VPN_WORKFLOWS.md)** | VPN connection diagrams |
-| **[🎯 Cluster Workflows](docs/drawings/CLUSTER_WORKFLOWS.md)** | OpenShift cluster management diagrams |
-| **[📋 Documentation Index](docs/README.md)** | Complete documentation overview |
+| Document                                                       | Description                              |
+| -------------------------------------------------------------- | ---------------------------------------- |
+| **[📖 User Guide](docs/USER_GUIDE.md)**                        | Installation, usage, troubleshooting     |
+| **[🏗️ Architecture](docs/ARCHITECTURE.md)**                    | System design, components, data flows    |
+| **[🔌 API Reference](docs/API.md)**                            | Complete REST API documentation          |
+| **[👨‍💻 Developer Guide](docs/DEVELOPER_GUIDE.md)**              | Development setup, testing, contributing |
+| **[🔐 Authentication Flows](docs/drawings/AUTH_FLOWS.md)**     | Security and credential diagrams         |
+| **[🌐 VPN Workflows](docs/drawings/VPN_WORKFLOWS.md)**         | VPN connection diagrams                  |
+| **[🎯 Cluster Workflows](docs/drawings/CLUSTER_WORKFLOWS.md)** | OpenShift cluster management diagrams    |
+| **[📋 Documentation Index](docs/README.md)**                   | Complete documentation overview          |
 
 ### 📝 Documentation Highlights
 
@@ -231,6 +236,7 @@ AMS2            Amsterdam (AMS2)                         ovpn-ams2.redhat.com   
 - Auto-reload in development mode
 
 **Key Endpoints**:
+
 ```bash
 GET  /vpn/profiles          # List all 21 VPN profiles
 POST /vpn/connect/{id}      # Connect to specific profile
@@ -248,12 +254,14 @@ GET  /get_creds             # Get username + password + OTP
 **Manage 21 Red Hat VPN endpoints globally**
 
 **🗺️ Supported Locations**:
+
 - 🌎 **Americas**: IAD2 (Ashburn), RDU2 (Raleigh), GRU2 (São Paulo)
 - 🌍 **Europe**: AMS2 (Amsterdam), BRQ2 (Brno), LCY (London), FAB (Farnborough)
 - 🌏 **Asia-Pacific**: NRT (Tokyo), PEK2 (Beijing), SIN2 (Singapore), SYD (Sydney), PNQ2 (Pune)
 - 🌐 **Global**: GLOBAL (ovpn.redhat.com)
 
 **🔧 Tools**:
+
 - `vpn-connect` - Quick VPN connection script
 - `vpn-profile-manager` - Full CLI management tool
 - `vpn-profiles/profiles.yaml` - Configuration file
@@ -267,6 +275,7 @@ GET  /get_creds             # Get username + password + OTP
 **Browser automation for Red Hat SSO and ephemeral environments**
 
 **✨ Features**:
+
 - ✅ Auto-fill credentials on Red Hat login pages
 - ✅ One-click password retrieval
 - ✅ Ephemeral namespace management
@@ -274,11 +283,13 @@ GET  /get_creds             # Get username + password + OTP
 - ✅ Manifest V3 compliance
 
 **🌐 Supported Pages**:
+
 - `auth.redhat.com` - Main SSO portal
 - `sso.redhat.com` - Secondary SSO
 - Ephemeral environment login pages
 
 **📦 Installation**:
+
 ```bash
 make install-chrome
 
@@ -298,6 +309,7 @@ make install-chrome
 **Desktop integration with system tray and notifications**
 
 **✨ Features**:
+
 - 🎯 System tray icon with Red Hat branding
 - 📋 VPN profile submenu (21 endpoints by region)
 - 📊 Real-time VPN status monitoring
@@ -306,6 +318,7 @@ make install-chrome
 - ⚙️ Native GNOME preferences UI
 
 **📦 Installation**:
+
 ```bash
 make install-gnome
 make gnome-enable
@@ -323,12 +336,14 @@ make gnome-prefs
 **Bonfire/OpenShift environment automation**
 
 **⚡ Capabilities**:
+
 - List and filter namespaces
 - Get namespace details (route, expiration, password)
 - Extend reservation duration
 - Cache management
 
 **💡 Example**:
+
 ```bash
 TOKEN=$(cat ~/.cache/rhotp/auth_token)
 
@@ -353,6 +368,7 @@ curl -X POST \
 **Centralized configuration and access for multiple OpenShift clusters**
 
 **✨ Features**:
+
 - ✅ CRUD operations for cluster configurations
 - ✅ Search and filter clusters by name, description, or URL
 - ✅ Get `oc login` commands via automated browser authentication
@@ -361,6 +377,7 @@ curl -X POST \
 - ✅ GNOME extension integration with submenus
 
 **🌐 Default Cluster Environments**:
+
 - **Ephemeral** (`e`) - Temporary dev/test environments
 - **Production** (`p`) - Production OpenShift cluster
 - **Stage** (`s`) - Staging environment
@@ -369,6 +386,7 @@ curl -X POST \
 - **Stone Production** (`k`) - Stone prod cluster
 
 **💡 Example**:
+
 ```bash
 TOKEN=$(cat ~/.cache/rhotp/auth_token)
 
@@ -401,6 +419,7 @@ curl -X POST \
 ```
 
 **📦 Tools**:
+
 - `rhtoken` - OpenShift token acquisition script with auto-ChromeDriver management
 - `kubeconfig.sh` - Kubeconfig management functions (`kube`, `kube-clean`)
 - `rhtoken.json` - Cluster configuration file
@@ -413,14 +432,14 @@ curl -X POST \
 
 ### 🛠️ Technology Stack
 
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| **Backend** | FastAPI, Uvicorn | REST API server |
-| **Frontend** | Chrome Extension (Manifest V3) | Browser automation |
-| **Desktop** | GNOME Shell Extension (GJS) | System integration |
-| **Security** | GPG, Pass, HOTP (RFC 4226) | Credential management |
-| **VPN** | NetworkManager, OpenVPN | VPN connectivity |
-| **Cloud** | Bonfire, OpenShift, Kubernetes | Ephemeral environments |
+| Layer        | Technology                     | Purpose                |
+| ------------ | ------------------------------ | ---------------------- |
+| **Backend**  | FastAPI, Uvicorn               | REST API server        |
+| **Frontend** | Chrome Extension (Manifest V3) | Browser automation     |
+| **Desktop**  | GNOME Shell Extension (GJS)    | System integration     |
+| **Security** | GPG, Pass, HOTP (RFC 4226)     | Credential management  |
+| **VPN**      | NetworkManager, OpenVPN        | VPN connectivity       |
+| **Cloud**    | Bonfire, OpenShift, Kubernetes | Ephemeral environments |
 
 ### 🔄 Data Flow
 
@@ -633,11 +652,11 @@ src/
 
 <div align="center">
 
-| 🌐 Global VPN | 🔐 Auto-Login | 🖥️ Desktop UI | ☁️ Ephemeral |
-|:------------:|:-------------:|:------------:|:------------:|
-| 21 worldwide endpoints | One-click SSO auth | GNOME integration | OpenShift mgmt |
-| Real-time status | HOTP token gen | System tray icon | Namespace extend |
-| Profile manager | Chrome extension | Notifications | API automation |
+|     🌐 Global VPN      |   🔐 Auto-Login    |   🖥️ Desktop UI   |   ☁️ Ephemeral   |
+| :--------------------: | :----------------: | :---------------: | :--------------: |
+| 21 worldwide endpoints | One-click SSO auth | GNOME integration |  OpenShift mgmt  |
+|    Real-time status    |   HOTP token gen   | System tray icon  | Namespace extend |
+|    Profile manager     |  Chrome extension  |   Notifications   |  API automation  |
 
 </div>
 
@@ -654,6 +673,7 @@ Contributions are welcome! Please:
 5. **Open** a Pull Request
 
 **Guidelines**:
+
 - Follow PEP 8 code style
 - Add tests for new features
 - Update documentation
@@ -673,14 +693,14 @@ Contributions are welcome! Please:
 
 ## 📊 Project Statistics
 
-| Metric | Count |
-|--------|-------|
-| **Total Code** | ~3,500 lines |
-| **API Endpoints** | 17+ |
-| **VPN Profiles** | 21 global |
+| Metric            | Count        |
+| ----------------- | ------------ |
+| **Total Code**    | ~3,500 lines |
+| **API Endpoints** | 17+          |
+| **VPN Profiles**  | 21 global    |
 | **Documentation** | 4,500+ lines |
-| **Diagrams** | 40+ Mermaid |
-| **Test Coverage** | Growing |
+| **Diagrams**      | 40+ Mermaid  |
+| **Test Coverage** | Growing      |
 
 ---
 
@@ -735,17 +755,17 @@ This project is licensed under the MIT License - see [LICENSE.txt](LICENSE.txt) 
 
 ## 🔗 Quick Links
 
-| Resource | Link |
-|----------|------|
-| 📖 **Documentation** | [docs/README.md](docs/README.md) |
-| 🏗️ **Architecture** | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
-| 🔌 **API Reference** | [docs/API.md](docs/API.md) |
-| 👤 **User Guide** | [docs/USER_GUIDE.md](docs/USER_GUIDE.md) |
-| 👨‍💻 **Developer Guide** | [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) |
-| 🔐 **Security Flows** | [docs/drawings/AUTH_FLOWS.md](docs/drawings/AUTH_FLOWS.md) |
-| 🌐 **VPN Workflows** | [docs/drawings/VPN_WORKFLOWS.md](docs/drawings/VPN_WORKFLOWS.md) |
+| Resource                 | Link                                                                     |
+| ------------------------ | ------------------------------------------------------------------------ |
+| 📖 **Documentation**     | [docs/README.md](docs/README.md)                                         |
+| 🏗️ **Architecture**      | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)                             |
+| 🔌 **API Reference**     | [docs/API.md](docs/API.md)                                               |
+| 👤 **User Guide**        | [docs/USER_GUIDE.md](docs/USER_GUIDE.md)                                 |
+| 👨‍💻 **Developer Guide**   | [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md)                       |
+| 🔐 **Security Flows**    | [docs/drawings/AUTH_FLOWS.md](docs/drawings/AUTH_FLOWS.md)               |
+| 🌐 **VPN Workflows**     | [docs/drawings/VPN_WORKFLOWS.md](docs/drawings/VPN_WORKFLOWS.md)         |
 | 🎯 **Cluster Workflows** | [docs/drawings/CLUSTER_WORKFLOWS.md](docs/drawings/CLUSTER_WORKFLOWS.md) |
-| 📋 **Feature Plans** | [plans/](plans/) |
+| 📋 **Feature Plans**     | [plans/](plans/)                                                         |
 
 ---
 
