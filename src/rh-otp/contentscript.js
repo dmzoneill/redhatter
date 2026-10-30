@@ -2,6 +2,15 @@ function RHOTPLoaded () {
   console.log('🔁 RHOTPLoaded')
 
   const currentURL = window.location.href
+  const currentHost = window.location.hostname
+  const currentPath = window.location.pathname
+
+  // Match on the real hostname (exact or subdomain), never a substring of the
+  // full URL, so e.g. https://evil.example/?auth.redhat.com cannot trigger
+  // credential autofill.
+  function onHost (host) {
+    return currentHost === host || currentHost.endsWith('.' + host)
+  }
 
   // Handle login process
   // Utility: Login using stored creds and form selectors
@@ -93,25 +102,25 @@ function RHOTPLoaded () {
       })
     }
 
-    if (currentURL.includes('auth.redhat.com')) {
+    if (onHost('auth.redhat.com')) {
       console.log('login: auth.redhat.com')
       handleLogin({ context: 'associate' })
-    } else if (currentURL.includes('sso.redhat.com/auth/realms')) {
+    } else if ((onHost('sso.redhat.com') && currentPath.startsWith('/auth/realms'))) {
       console.log('login: sso.redhat.com/auth/realms')
       SSORedhatLogin()
-    } else if (currentURL.includes('openshiftapps.com/oauth/authorize')) {
+    } else if ((onHost('openshiftapps.com') && currentPath.startsWith('/oauth/authorize'))) {
       console.log('login: openshiftapps.com/oauth/authorize')
       clickButton('.pf-c-button', '🟥 Clicking Red Hat OAuth button')
-    } else if (currentURL.includes('gitlab.cee.redhat.com/users/sign_in')) {
+    } else if ((onHost('gitlab.cee.redhat.com') && currentPath.startsWith('/users/sign_in'))) {
       console.log('login: gitlab.cee.redhat.com/users/sign_in')
       clickSAMLButton('🔐 Clicking GitLab SAML login')
-    } else if (currentURL.includes('ci.int.devshift.net')) {
+    } else if (onHost('ci.int.devshift.net')) {
       console.log('login: ci.int.devshift.net')
       searchAndRedirectToDevshiftLogin()
-    } else if (currentURL.includes('gitlab.cee.redhat.com')) {
+    } else if (onHost('gitlab.cee.redhat.com')) {
       console.log('login: gitlab.cee.redhat.com')
       clickButton('a[href="/users/sign_in?redirect_to_referer=yes"]', '🔗 Found GitLab redirect sign-in, clicking...')
-    } else if (currentURL.includes('source.redhat.com/?signin')) {
+    } else if ((onHost('source.redhat.com') && window.location.search.includes('signin'))) {
       console.log('login: source.redhat.com/?signin')
       document.getElementById('samlsignin-submit-button').click()
     }

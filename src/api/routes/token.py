@@ -8,6 +8,7 @@ using the rhtoken script and managing cluster configurations.
 import json
 import logging
 import os
+import re
 import subprocess
 from enum import Enum
 from typing import Dict, List, Optional, cast
@@ -411,6 +412,11 @@ async def open_cluster_terminal(
     - success: Status string ("true" or "false")
     - message: Status message
     """
+    # cluster_id is interpolated into a `bash -c` string below; only allow
+    # short alphanumeric identifiers to prevent shell command injection.
+    if not re.fullmatch(r"[A-Za-z0-9_-]{1,32}", cluster_id):
+        raise HTTPException(status_code=400, detail="Invalid cluster_id")
+
     logger.info(f"[open-terminal] Starting request for cluster: {cluster_id}")
 
     try:
