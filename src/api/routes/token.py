@@ -11,9 +11,9 @@ import os
 import re
 import subprocess
 from enum import Enum
-from typing import Dict, List, Optional, cast
+from typing import cast
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from api.dependencies.auth import verify_token
@@ -27,9 +27,9 @@ def transform_oauth_to_console_url(oauth_url: str) -> str:
     From: https://oauth-openshift.apps.crcs02ue1.urby.p1.openshiftapps.com/oauth/token/request
     To:   https://console-openshift-console.apps.crcs02ue1.urby.p1.openshiftapps.com/
     """
-    return oauth_url.replace(
-        "oauth-openshift.apps.", "console-openshift-console.apps."
-    ).replace("/oauth/token/request", "/")
+    return oauth_url.replace("oauth-openshift.apps.", "console-openshift-console.apps.").replace(
+        "/oauth/token/request", "/"
+    )
 
 
 logger = logging.getLogger(__name__)
@@ -69,17 +69,17 @@ class ClusterResponse(BaseModel):
 class ClusterUpdateRequest(BaseModel):
     """Cluster update request model."""
 
-    name: Optional[str] = Field(None, description="New cluster name")
-    description: Optional[str] = Field(None, description="New cluster description")
-    url: Optional[str] = Field(None, description="New cluster URL")
+    name: str | None = Field(None, description="New cluster name")
+    description: str | None = Field(None, description="New cluster description")
+    url: str | None = Field(None, description="New cluster URL")
 
 
 @router.get("/oc-login")
-async def get_oc_login_command(
+def get_oc_login_command(
     env: Environment = Query(..., description="Environment: e|p|s|ap|cp|k"),
     headless: bool = Query(True, description="Run in headless mode"),
     _token: str = Depends(verify_token),
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """
     Get OpenShift login command for specified environment.
 
@@ -94,28 +94,24 @@ async def get_oc_login_command(
     - command: The oc login command string
     - environment: The environment requested
     """
-    logger.info(f"Getting oc login command for environment: {env.value}")
+    logger.info("Getting oc login command for environment: %s", env.value)
 
     # Build command
-    script_dir = os.path.dirname(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    )
+    script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     rhtoken_path = os.path.join(script_dir, "rhtoken")
 
     if not os.path.exists(rhtoken_path):
-        logger.error(f"rhtoken script not found at: {rhtoken_path}")
+        logger.error("rhtoken script not found at: %s", rhtoken_path)
         raise HTTPException(status_code=500, detail="rhtoken script not found")
 
     cmd = [rhtoken_path, env.value, "--query"]
     if headless:
         cmd.append("--headless")
 
-    logger.info(f"Executing command: {' '.join(cmd)}")
+    logger.info("Executing command: %s", " ".join(cmd))
 
     try:
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=60, check=True
-        )
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60, check=True)
 
         # Extract the oc login command from output
         output = result.stdout.strip()
@@ -137,13 +133,13 @@ async def get_oc_login_command(
                     break
 
         if not oc_command:
-            logger.error(f"Could not extract oc login command from output: {output}")
+            logger.error("Could not extract oc login command from output: %s", output)
             raise HTTPException(
                 status_code=500,
                 detail="Could not extract oc login command from rhtoken output",
             )
 
-        logger.info(f"Successfully retrieved oc login command for {env.value}")
+        logger.info("Successfully retrieved oc login command for %s", env.value)
 
         return {
             "command": oc_command,
@@ -151,45 +147,41 @@ async def get_oc_login_command(
             "environment_name": _get_env_name(env.value),
         }
 
-    except subprocess.TimeoutExpired:
-        logger.error(f"rhtoken script timed out for environment: {env.value}")
+    except subprocess.TimeoutExpired as e:
+        logger.error("rhtoken script timed out for environment: %s", env.value)
         raise HTTPException(
             status_code=504,
             detail="Request timed out - rhtoken script took too long to execute",
-        )
+        ) from e
     except subprocess.CalledProcessError as e:
-        logger.error(f"rhtoken script failed: {e.stderr}")
-        raise HTTPException(
-            status_code=500, detail=f"rhtoken script failed: {e.stderr}"
-        )
+        logger.error("rhtoken script failed: %s", e.stderr)
+        raise HTTPException(status_code=500, detail=f"rhtoken script failed: {e.stderr}") from e
     except Exception as e:
-        logger.error(f"Unexpected error getting oc login command: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+        logger.error("Unexpected error getting oc login command: %s", e)
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {e!s}") from e
 
 
 def _get_env_name(env: str) -> str:
     """Get human-readable environment name from rhtoken.json config."""
     try:
-        script_dir = os.path.dirname(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        )
+        script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         config_path = os.path.join(script_dir, "rhtoken.json")
 
-        with open(config_path, "r") as f:
-            config = cast(Dict, json.load(f))
+        with open(config_path, "r", encoding="utf-8") as f:
+            config = cast(dict, json.load(f))
             clusters = config.get("clusters", {})
             cluster = clusters.get(env, {})
             return cast(str, cluster.get("name", "Unknown"))
     except Exception as e:
-        logger.error(f"Error loading environment name from config: {e}")
+        logger.error("Error loading environment name from config: %s", e)
         return "Unknown"
 
 
 # Cluster Management Endpoints
 
 
-@router.get("/clusters", response_model=List[ClusterResponse])
-async def list_clusters(_token: str = Depends(verify_token)) -> List[ClusterResponse]:
+@router.get("/clusters", response_model=list[ClusterResponse])
+async def list_clusters(_token: str = Depends(verify_token)) -> list[ClusterResponse]:
     """
     List all configured OpenShift clusters.
 
@@ -210,19 +202,15 @@ async def list_clusters(_token: str = Depends(verify_token)) -> List[ClusterResp
             for cluster_id, cluster_data in clusters.items()
         ]
     except Exception as e:
-        logger.error(f"Error listing clusters: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to list clusters: {str(e)}"
-        )
+        logger.error("Error listing clusters: %s", e)
+        raise HTTPException(status_code=500, detail=f"Failed to list clusters: {e!s}") from e
 
 
-@router.get("/clusters/search", response_model=List[ClusterResponse])
+@router.get("/clusters/search", response_model=list[ClusterResponse])
 async def search_clusters(
-    q: str = Query(
-        ..., description="Search query (searches name, description, URL, and ID)"
-    ),
+    q: str = Query(..., description="Search query (searches name, description, URL, and ID)"),
     _token: str = Depends(verify_token),
-) -> List[ClusterResponse]:
+) -> list[ClusterResponse]:
     """
     Search clusters by name, description, URL, or ID.
 
@@ -246,16 +234,12 @@ async def search_clusters(
             for cluster_id, cluster_data in clusters.items()
         ]
     except Exception as e:
-        logger.error(f"Error searching clusters: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to search clusters: {str(e)}"
-        )
+        logger.error("Error searching clusters: %s", e)
+        raise HTTPException(status_code=500, detail=f"Failed to search clusters: {e!s}") from e
 
 
 @router.get("/clusters/{cluster_id}", response_model=ClusterResponse)
-async def get_cluster(
-    cluster_id: str, _token: str = Depends(verify_token)
-) -> ClusterResponse:
+async def get_cluster(cluster_id: str, _token: str = Depends(verify_token)) -> ClusterResponse:
     """
     Get a specific cluster configuration by ID.
 
@@ -270,9 +254,7 @@ async def get_cluster(
         cluster = manager.get_cluster(cluster_id)
 
         if cluster is None:
-            raise HTTPException(
-                status_code=404, detail=f"Cluster '{cluster_id}' not found"
-            )
+            raise HTTPException(status_code=404, detail=f"Cluster '{cluster_id}' not found")
 
         return ClusterResponse(
             cluster_id=cluster_id,
@@ -283,8 +265,8 @@ async def get_cluster(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting cluster {cluster_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to get cluster: {str(e)}")
+        logger.error("Error getting cluster %s: %s", cluster_id, e)
+        raise HTTPException(status_code=500, detail=f"Failed to get cluster: {e!s}") from e
 
 
 @router.post("/clusters/{cluster_id}", response_model=ClusterResponse, status_code=201)
@@ -317,10 +299,10 @@ async def add_cluster(
             url=cluster_config.url,
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        logger.error(f"Error adding cluster {cluster_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to add cluster: {str(e)}")
+        logger.error("Error adding cluster %s: %s", cluster_id, e)
+        raise HTTPException(status_code=500, detail=f"Failed to add cluster: {e!s}") from e
 
 
 @router.put("/clusters/{cluster_id}", response_model=ClusterResponse)
@@ -355,18 +337,14 @@ async def update_cluster(
             url=updated_cluster.get("url", ""),
         )
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
-        logger.error(f"Error updating cluster {cluster_id}: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to update cluster: {str(e)}"
-        )
+        logger.error("Error updating cluster %s: %s", cluster_id, e)
+        raise HTTPException(status_code=500, detail=f"Failed to update cluster: {e!s}") from e
 
 
 @router.delete("/clusters/{cluster_id}", response_model=ClusterResponse)
-async def delete_cluster(
-    cluster_id: str, _token: str = Depends(verify_token)
-) -> ClusterResponse:
+async def delete_cluster(cluster_id: str, _token: str = Depends(verify_token)) -> ClusterResponse:
     """
     Delete a cluster configuration.
 
@@ -387,21 +365,17 @@ async def delete_cluster(
             url=deleted_cluster.get("url", ""),
         )
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
-        logger.error(f"Error deleting cluster {cluster_id}: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to delete cluster: {str(e)}"
-        )
+        logger.error("Error deleting cluster %s: %s", cluster_id, e)
+        raise HTTPException(status_code=500, detail=f"Failed to delete cluster: {e!s}") from e
 
 
 # Cluster Terminal and Web Console Endpoints
 
 
 @router.post("/clusters/{cluster_id}/open-terminal")
-async def open_cluster_terminal(
-    cluster_id: str, _token: str = Depends(verify_token)
-) -> Dict[str, str]:
+def open_cluster_terminal(cluster_id: str, _token: str = Depends(verify_token)) -> dict[str, str]:
     """
     Open a terminal window and execute oc login for the specified cluster.
 
@@ -417,27 +391,23 @@ async def open_cluster_terminal(
     if not re.fullmatch(r"[A-Za-z0-9_-]{1,32}", cluster_id):
         raise HTTPException(status_code=400, detail="Invalid cluster_id")
 
-    logger.info(f"[open-terminal] Starting request for cluster: {cluster_id}")
+    logger.info("[open-terminal] Starting request for cluster: %s", cluster_id)
 
     try:
         # Get the oc login command
-        script_dir = os.path.dirname(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        )
+        script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         rhtoken_path = os.path.join(script_dir, "rhtoken")
 
-        logger.debug(f"[open-terminal] Script directory: {script_dir}")
-        logger.debug(f"[open-terminal] rhtoken path: {rhtoken_path}")
+        logger.debug("[open-terminal] Script directory: %s", script_dir)
+        logger.debug("[open-terminal] rhtoken path: %s", rhtoken_path)
 
         if not os.path.exists(rhtoken_path):
-            logger.error(f"[open-terminal] rhtoken script not found at: {rhtoken_path}")
+            logger.error("[open-terminal] rhtoken script not found at: %s", rhtoken_path)
             raise HTTPException(status_code=500, detail="rhtoken script not found")
 
         # Instead of getting the oc login command first (which requires full auth),
         # use the kube function which properly sets KUBECONFIG and keeps it in the shell
-        logger.info(
-            f"[open-terminal] Opening terminal to run kube function for cluster: {cluster_id}"
-        )
+        logger.info("[open-terminal] Opening terminal to run kube function for cluster: %s", cluster_id)
 
         # Get kubeconfig script path
         kubeconfig_script = os.path.join(script_dir, "kubeconfig.sh")
@@ -453,22 +423,23 @@ async def open_cluster_terminal(
         ]
 
         logger.info(
-            f"[open-terminal] Opening terminal with command: gnome-terminal -- bash -c 'source kubeconfig.sh && kube-clean {cluster_id} && kube {cluster_id}; bash'"
+            "[open-terminal] Opening terminal with command: gnome-terminal -- bash -c "
+            "'source kubeconfig.sh && kube-clean %s && kube %s; bash'",
+            cluster_id,
+            cluster_id,
         )
-        logger.debug(f"[open-terminal] Full terminal command: {terminal_command}")
+        logger.debug("[open-terminal] Full terminal command: %s", terminal_command)
 
         # Start the process and immediately return (don't wait for it)
-        process = subprocess.Popen(
+        process = subprocess.Popen(  # pylint: disable=consider-using-with  # detached terminal
             terminal_command,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             start_new_session=True,
         )
 
-        logger.info(f"[open-terminal] Terminal process started with PID: {process.pid}")
-        logger.info(
-            f"[open-terminal] Successfully opened terminal for cluster {cluster_id}"
-        )
+        logger.info("[open-terminal] Terminal process started with PID: %s", process.pid)
+        logger.info("[open-terminal] Successfully opened terminal for cluster %s", cluster_id)
 
         return {
             "success": "true",
@@ -476,19 +447,13 @@ async def open_cluster_terminal(
         }
 
     except Exception as e:
-        logger.error(
-            f"[open-terminal] Unexpected error for cluster {cluster_id}: {str(e)}"
-        )
+        logger.error("[open-terminal] Unexpected error for cluster %s: %s", cluster_id, e)
         logger.exception("[open-terminal] Full exception traceback:")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to open terminal: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to open terminal: {e!s}") from e
 
 
 @router.post("/clusters/{cluster_id}/open-web")
-async def open_cluster_web(
-    cluster_id: str, _token: str = Depends(verify_token)
-) -> Dict[str, str]:
+def open_cluster_web(cluster_id: str, _token: str = Depends(verify_token)) -> dict[str, str]:
     """
     Open the cluster web console in the default browser.
 
@@ -506,23 +471,21 @@ async def open_cluster_web(
         cluster = manager.get_cluster(cluster_id)
 
         if cluster is None:
-            raise HTTPException(
-                status_code=404, detail=f"Cluster '{cluster_id}' not found"
-            )
+            raise HTTPException(status_code=404, detail=f"Cluster '{cluster_id}' not found")
 
         # Transform OAuth URL to console URL
         oauth_url = cluster.get("url", "")
         console_url = transform_oauth_to_console_url(oauth_url)
 
         # Open URL in browser
-        subprocess.Popen(
+        subprocess.Popen(  # pylint: disable=consider-using-with  # detached browser
             ["xdg-open", console_url],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             start_new_session=True,
         )
 
-        logger.info(f"Opened web console for cluster {cluster_id}: {console_url}")
+        logger.info("Opened web console for cluster %s: %s", cluster_id, console_url)
 
         return {
             "success": "true",
@@ -533,7 +496,5 @@ async def open_cluster_web(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error opening web console for cluster {cluster_id}: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to open web console: {str(e)}"
-        )
+        logger.error("Error opening web console for cluster %s: %s", cluster_id, e)
+        raise HTTPException(status_code=500, detail=f"Failed to open web console: {e!s}") from e

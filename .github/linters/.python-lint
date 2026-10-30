@@ -1,0 +1,11 @@
+[MASTER]
+jobs=0
+
+[MESSAGES CONTROL]
+# import-error: super-linter default. too-few-public-methods: pydantic models.
+# broad-exception-caught: FastAPI handlers map any error to HTTP 500 (see .ruff.toml BLE001).
+disable=import-error,too-few-public-methods,broad-exception-caught
+
+[FORMAT]
+# Match ruff/flake8 line length.
+max-line-length=120
