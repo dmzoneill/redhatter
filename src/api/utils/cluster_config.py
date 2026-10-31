@@ -8,7 +8,7 @@ in the rhtoken.json file.
 import json
 import logging
 import os
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, cast
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class ClusterConfigManager:
     """Manages cluster configurations in rhtoken.json."""
 
-    def __init__(self, config_path: Optional[str] = None):
+    def __init__(self, config_path: str | None = None):
         """
         Initialize the cluster config manager.
 
@@ -24,33 +24,31 @@ class ClusterConfigManager:
             config_path: Path to rhtoken.json. If None, uses default location.
         """
         if config_path is None:
-            script_dir = os.path.dirname(
-                os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            )
+            script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
             config_path = os.path.join(script_dir, "rhtoken.json")
 
         self.config_path = config_path
 
-    def _load_config(self) -> Dict[str, Any]:
+    def _load_config(self) -> dict[str, Any]:
         """Load the entire rhtoken.json configuration."""
         try:
-            with open(self.config_path, "r") as f:
-                return cast(Dict[str, Any], json.load(f))
-        except FileNotFoundError:
-            raise FileNotFoundError(f"Configuration file not found: {self.config_path}")
+            with open(self.config_path, encoding="utf-8") as f:
+                return cast(dict[str, Any], json.load(f))
+        except FileNotFoundError as e:
+            raise FileNotFoundError(f"Configuration file not found: {self.config_path}") from e
         except json.JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON in configuration file: {e}")
+            raise ValueError(f"Invalid JSON in configuration file: {e}") from e
 
-    def _save_config(self, config: Dict[str, Any]) -> None:
+    def _save_config(self, config: dict[str, Any]) -> None:
         """Save configuration to rhtoken.json."""
         try:
-            with open(self.config_path, "w") as f:
+            with open(self.config_path, "w", encoding="utf-8") as f:
                 json.dump(config, f, indent=2)
                 f.write("\n")  # Add trailing newline
-        except Exception as e:
-            raise IOError(f"Failed to save configuration: {e}")
+        except (OSError, TypeError, ValueError) as e:
+            raise OSError(f"Failed to save configuration: {e}") from e
 
-    def list_clusters(self) -> Dict[str, Dict[str, Any]]:
+    def list_clusters(self) -> dict[str, dict[str, Any]]:
         """
         List all cluster configurations.
 
@@ -58,9 +56,9 @@ class ClusterConfigManager:
             Dictionary of cluster ID -> cluster configuration
         """
         config = self._load_config()
-        return cast(Dict[str, Dict[str, Any]], config.get("clusters", {}))
+        return cast(dict[str, dict[str, Any]], config.get("clusters", {}))
 
-    def get_cluster(self, cluster_id: str) -> Optional[Dict[str, Any]]:
+    def get_cluster(self, cluster_id: str) -> dict[str, Any] | None:
         """
         Get a specific cluster configuration.
 
@@ -73,7 +71,7 @@ class ClusterConfigManager:
         clusters = self.list_clusters()
         return clusters.get(cluster_id)
 
-    def search_clusters(self, query: str) -> Dict[str, Dict[str, Any]]:
+    def search_clusters(self, query: str) -> dict[str, dict[str, Any]]:
         """
         Search clusters by name, description, or URL.
 
@@ -103,9 +101,7 @@ class ClusterConfigManager:
 
         return results
 
-    def add_cluster(
-        self, cluster_id: str, name: str, url: str, description: str = ""
-    ) -> Dict[str, Any]:
+    def add_cluster(self, cluster_id: str, name: str, url: str, description: str = "") -> dict[str, Any]:
         """
         Add a new cluster configuration.
 
@@ -133,16 +129,16 @@ class ClusterConfigManager:
         config["clusters"] = clusters
         self._save_config(config)
 
-        logger.info(f"Added new cluster: {cluster_id} - {name}")
+        logger.info("Added new cluster: %s - %s", cluster_id, name)
         return new_cluster
 
     def update_cluster(
         self,
         cluster_id: str,
-        name: Optional[str] = None,
-        url: Optional[str] = None,
-        description: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        name: str | None = None,
+        url: str | None = None,
+        description: str | None = None,
+    ) -> dict[str, Any]:
         """
         Update an existing cluster configuration.
 
@@ -177,10 +173,10 @@ class ClusterConfigManager:
         config["clusters"] = clusters
         self._save_config(config)
 
-        logger.info(f"Updated cluster: {cluster_id}")
-        return cast(Dict[str, Any], cluster)
+        logger.info("Updated cluster: %s", cluster_id)
+        return cast(dict[str, Any], cluster)
 
-    def delete_cluster(self, cluster_id: str) -> Dict[str, Any]:
+    def delete_cluster(self, cluster_id: str) -> dict[str, Any]:
         """
         Delete a cluster configuration.
 
@@ -203,5 +199,5 @@ class ClusterConfigManager:
         config["clusters"] = clusters
         self._save_config(config)
 
-        logger.info(f"Deleted cluster: {cluster_id}")
-        return cast(Dict[str, Any], deleted_cluster)
+        logger.info("Deleted cluster: %s", cluster_id)
+        return cast(dict[str, Any], deleted_cluster)
