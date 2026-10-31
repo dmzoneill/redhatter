@@ -2,9 +2,8 @@
 
 import logging
 import subprocess
-from functools import lru_cache
 from pathlib import Path
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, cast
 
 import yaml
 from fastapi import HTTPException
@@ -12,12 +11,12 @@ from fastapi import HTTPException
 logger = logging.getLogger(__name__)
 
 
-# Cache profiles config to avoid repeated YAML parsing
-_profiles_cache = None
-_profiles_cache_mtime = None
+# Cache profiles config to avoid repeated YAML parsing. A single dict container
+# keeps the mutable state without a module-level ``global`` statement.
+_PROFILES_CACHE: dict[str, Any] = {"config": None, "mtime": None}
 
 
-def load_vpn_profiles(use_cache: bool = True) -> Dict[str, Any]:
+def load_vpn_profiles(use_cache: bool = True) -> dict[str, Any]:
     """
     Load VPN profiles from profiles.yaml with optional caching.
 
@@ -30,8 +29,6 @@ def load_vpn_profiles(use_cache: bool = True) -> Dict[str, Any]:
     Raises:
         HTTPException: If profiles file not found
     """
-    global _profiles_cache, _profiles_cache_mtime
-
     profiles_file = Path(__file__).parent.parent / "vpn-profiles" / "profiles.yaml"
 
     if not profiles_file.exists():
@@ -41,26 +38,26 @@ def load_vpn_profiles(use_cache: bool = True) -> Dict[str, Any]:
         )
 
     # Check if we can use cache
-    if use_cache and _profiles_cache is not None:
+    if use_cache and _PROFILES_CACHE["config"] is not None:
         current_mtime = profiles_file.stat().st_mtime
-        if current_mtime == _profiles_cache_mtime:
+        if current_mtime == _PROFILES_CACHE["mtime"]:
             logger.debug("Using cached VPN profiles")
-            return cast(Dict[str, Any], _profiles_cache)
+            return cast(dict[str, Any], _PROFILES_CACHE["config"])
 
     # Load from file
-    with open(profiles_file) as f:
-        config = cast(Dict[str, Any], yaml.safe_load(f))
+    with open(profiles_file, encoding="utf-8") as f:
+        config = cast(dict[str, Any], yaml.safe_load(f))
 
     # Update cache
     if use_cache:
-        _profiles_cache = config
-        _profiles_cache_mtime = profiles_file.stat().st_mtime
+        _PROFILES_CACHE["config"] = config
+        _PROFILES_CACHE["mtime"] = profiles_file.stat().st_mtime
         logger.debug("VPN profiles loaded and cached")
 
     return config
 
 
-def get_vpn_connection_status() -> Dict[str, Any]:
+def get_vpn_connection_status() -> dict[str, Any]:
     """Get current VPN connection status using nmcli."""
     try:
         result = subprocess.run(
@@ -89,11 +86,11 @@ def get_vpn_connection_status() -> Dict[str, Any]:
         return {"connected": False}
 
     except subprocess.CalledProcessError as e:
-        logger.error(f"Error checking VPN status: {e}")
+        logger.error("Error checking VPN status: %s", e)
         return {"connected": False, "error": str(e)}
 
 
-def get_default_vpn_uuid(password_store_service) -> Optional[str]:
+def get_default_vpn_uuid(password_store_service) -> str | None:
     """
     Get the default VPN UUID from password store.
 
@@ -108,8 +105,8 @@ def get_default_vpn_uuid(password_store_service) -> Optional[str]:
         if uuid and isinstance(uuid, str):
             return cast(str, uuid.strip())
         return None
-    except Exception as e:
-        logger.error(f"Error retrieving default VPN UUID: {e}")
+    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as e:
+        logger.error("Error retrieving default VPN UUID: %s", e)
         return None
 
 
@@ -127,14 +124,14 @@ def set_default_vpn_uuid(password_store_service, uuid: str) -> bool:
     try:
         result = password_store_service.update_store("nm-uuid", uuid)
         return cast(bool, result)
-    except Exception as e:
-        logger.error(f"Error setting default VPN UUID: {e}")
+    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as e:
+        logger.error("Error setting default VPN UUID: %s", e)
         return False
 
 
 def find_profile_by_uuid(
-    profiles: List[Dict[str, Any]], uuid: str
-) -> Optional[Dict[str, Any]]:
+    profiles: list[dict[str, Any]], uuid: str
+) -> dict[str, Any] | None:
     """
     Find a VPN profile by its UUID.
 
@@ -152,8 +149,8 @@ def find_profile_by_uuid(
 
 
 def find_profile_by_id(
-    profiles: List[Dict[str, Any]], profile_id: str
-) -> Optional[Dict[str, Any]]:
+    profiles: list[dict[str, Any]], profile_id: str
+) -> dict[str, Any] | None:
     """
     Find a VPN profile by its ID (case-insensitive).
 
@@ -170,7 +167,7 @@ def find_profile_by_id(
     return None
 
 
-def get_global_profile(profiles: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+def get_global_profile(profiles: list[dict[str, Any]]) -> dict[str, Any] | None:
     """
     Get the GLOBAL VPN profile.
 
