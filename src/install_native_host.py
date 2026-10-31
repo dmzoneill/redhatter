@@ -4,6 +4,7 @@ Installation script for Chrome native messaging host on Linux.
 This script automatically configures the native messaging manifest with the correct paths.
 """
 
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -50,10 +51,7 @@ def install_native_host(install_path=None, extension_id=None, browsers=None):
 
     # Check platform
     if not sys.platform.startswith("linux"):
-        print(
-            f"❌ Error: This script only supports Linux. "
-            f"Detected platform: {sys.platform}"
-        )
+        print(f"❌ Error: This script only supports Linux. Detected platform: {sys.platform}")
         return False
 
     # Use current directory if no install path provided
@@ -81,9 +79,7 @@ def install_native_host(install_path=None, extension_id=None, browsers=None):
     chrome_dirs = get_chrome_config_dirs()
     if browsers:
         # Filter to only specified browsers
-        chrome_dirs = [
-            d for d in chrome_dirs if any(browser in str(d) for browser in browsers)
-        ]
+        chrome_dirs = [d for d in chrome_dirs if any(browser in str(d) for browser in browsers)]
 
     installed_count = 0
 
@@ -95,13 +91,13 @@ def install_native_host(install_path=None, extension_id=None, browsers=None):
 
                 # Write manifest
                 manifest_path = chrome_dir / "com.redhat.rhotp.json"
-                with open(manifest_path, "w") as f:
+                with open(manifest_path, "w", encoding="utf-8") as f:
                     json.dump(manifest, f, indent=2)
 
                 print(f"✅ Installed to: {manifest_path}")
                 installed_count += 1
 
-            except Exception as e:
+            except (OSError, TypeError, ValueError) as e:
                 print(f"⚠️  Failed to install to {chrome_dir}: {e}")
 
     if installed_count == 0:
@@ -118,9 +114,7 @@ def install_native_host(install_path=None, extension_id=None, browsers=None):
         print("1. Load the extension in Chrome (Developer mode)")
         print("2. Copy the extension ID from chrome://extensions/")
         print("3. Run this script again with: --extension-id YOUR_EXTENSION_ID")
-        print(
-            "   OR manually edit the manifest files and replace YOUR_EXTENSION_ID_HERE"
-        )
+        print("   OR manually edit the manifest files and replace YOUR_EXTENSION_ID_HERE")
 
     return True
 
@@ -137,7 +131,7 @@ def uninstall_native_host():
                 manifest_path.unlink()
                 print(f"✅ Removed: {manifest_path}")
                 removed_count += 1
-            except Exception as e:
+            except OSError as e:
                 print(f"⚠️  Failed to remove {manifest_path}: {e}")
 
     if removed_count == 0:
@@ -150,11 +144,7 @@ def uninstall_native_host():
 
 def main():
     """Main function with command line interface."""
-    import argparse
-
-    parser = argparse.ArgumentParser(
-        description="Install/uninstall Chrome native messaging host for RHOTP"
-    )
+    parser = argparse.ArgumentParser(description="Install/uninstall Chrome native messaging host for RHOTP")
     parser.add_argument("--path", help="Installation path (default: current directory)")
     parser.add_argument("--extension-id", help="Chrome extension ID")
     parser.add_argument(
@@ -163,12 +153,8 @@ def main():
         choices=["chrome", "chromium", "brave", "edge"],
         help="Specific browsers to install for",
     )
-    parser.add_argument(
-        "--uninstall", action="store_true", help="Uninstall native messaging host"
-    )
-    parser.add_argument(
-        "--list", action="store_true", help="List Chrome configuration directories"
-    )
+    parser.add_argument("--uninstall", action="store_true", help="Uninstall native messaging host")
+    parser.add_argument("--list", action="store_true", help="List Chrome configuration directories")
 
     args = parser.parse_args()
 
@@ -183,9 +169,7 @@ def main():
         uninstall_native_host()
         return
 
-    success = install_native_host(
-        install_path=args.path, extension_id=args.extension_id, browsers=args.browsers
-    )
+    success = install_native_host(install_path=args.path, extension_id=args.extension_id, browsers=args.browsers)
 
     if not success:
         sys.exit(1)
