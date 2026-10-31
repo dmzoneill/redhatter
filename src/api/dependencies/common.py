@@ -1,14 +1,19 @@
 """Common dependencies and utilities for API routes."""
 
 import logging
+import subprocess
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, Optional, cast
+from typing import cast
 
 from fastapi import HTTPException
 
 from services.password_store import password_store
 
 logger = logging.getLogger(__name__)
+
+# Errors handle_api_errors maps to HTTP 500 with the error message.
+API_ERRORS = (OSError, ValueError, KeyError, TypeError, RuntimeError, subprocess.SubprocessError)
 
 
 def get_username_from_store() -> str:
@@ -23,15 +28,11 @@ def get_username_from_store() -> str:
     """
     username = password_store.get_from_store("username")
     if not username:
-        raise HTTPException(
-            status_code=500, detail="Failed to retrieve username from password store"
-        )
+        raise HTTPException(status_code=500, detail="Failed to retrieve username from password store")
     return cast(str, username.strip())
 
 
-def find_script_path(
-    script_name: str, search_paths: Optional[list[Path]] = None
-) -> Path:
+def find_script_path(script_name: str, search_paths: list[Path] | None = None) -> Path:
     """
     Find a script in common locations.
 
@@ -59,7 +60,7 @@ def find_script_path(
 
     for path in search_paths:
         if path.exists() and path.is_file():
-            logger.debug(f"Found script {script_name} at {path}")
+            logger.debug("Found script %s at %s", script_name, path)
             return path
 
     raise HTTPException(
@@ -89,9 +90,9 @@ def handle_api_errors(func: Callable):
         except HTTPException:
             # Re-raise HTTPExceptions as-is
             raise
-        except Exception as e:
-            logger.error(f"Error in {func.__name__}: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
+        except API_ERRORS as e:
+            logger.error("Error in %s: %s", func.__name__, e)
+            raise HTTPException(status_code=500, detail=str(e)) from e
 
     # Preserve function metadata for FastAPI
     wrapper.__name__ = func.__name__
