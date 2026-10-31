@@ -40,11 +40,11 @@ app.include_router(legacy.router)  # Legacy endpoints for backward compatibility
 @app.on_event("startup")
 async def startup_event():
     """Initialize authentication token and other startup tasks."""
-    token = get_or_create_auth_token()
+    auth_token = get_or_create_auth_token()
     logger.info("=" * 60)
     logger.info("RH-OTP Auto-Connect Service started")
     logger.info("Version: 2.0.0")
-    logger.info(f"Authentication token: {token[:8]}...")
+    logger.info("Authentication token: %s...", auth_token[:8])
     logger.info("API Documentation: http://localhost:8009/docs")
     logger.info("=" * 60)
 

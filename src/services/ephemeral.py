@@ -8,14 +8,11 @@ import base64
 import json
 import logging
 import subprocess
-from typing import List, Optional, Tuple
-
-from fastapi import HTTPException
 
 logger = logging.getLogger(__name__)
 
 
-def run_command(cmd: str) -> Tuple[bool, str, str]:
+def run_command(cmd: str) -> tuple[bool, str, str]:
     """
     Execute a shell command and return results.
 
@@ -30,16 +27,16 @@ def run_command(cmd: str) -> Tuple[bool, str, str]:
         stdout, stderr = proc.communicate()
         success = proc.returncode == 0
 
-        logger.debug(f"Command: {cmd}")
-        logger.debug(f"Success: {success}")
-        logger.debug(f"Stdout: {stdout.strip()}")
+        logger.debug("Command: %s", cmd)
+        logger.debug("Success: %s", success)
+        logger.debug("Stdout: %s", stdout.strip())
         if stderr:
-            logger.debug(f"Stderr: {stderr.strip()}")
+            logger.debug("Stderr: %s", stderr.strip())
 
         return success, stdout.strip(), stderr.strip()
 
-    except Exception as e:
-        logger.error(f"Error executing command: {e}")
+    except (OSError, ValueError, subprocess.SubprocessError) as e:
+        logger.error("Error executing command: %s", e)
         return False, "", str(e)
 
 
@@ -57,7 +54,7 @@ def set_namespace(namespace: str) -> bool:
     return success
 
 
-def get_namespace_password(namespace: str) -> Optional[str]:
+def get_namespace_password(namespace: str) -> str | None:
     """
     Retrieve password for the given ephemeral namespace.
 
@@ -72,14 +69,14 @@ def get_namespace_password(namespace: str) -> Optional[str]:
     try:
         # Set the namespace context
         if not set_namespace(namespace):
-            logger.error(f"Failed to set namespace to {namespace}")
+            logger.error("Failed to set namespace to %s", namespace)
             return None
 
         # Get the Keycloak secret
         success, stdout, stderr = run_command(f'/usr/local/bin/kubectl get secret "env-{namespace}-keycloak" -o json')
 
         if not success:
-            logger.error(f"Failed to get secret: {stderr}")
+            logger.error("Failed to get secret: %s", stderr)
             return None
 
         # Parse the secret JSON
@@ -94,12 +91,12 @@ def get_namespace_password(namespace: str) -> Optional[str]:
         password = base64.b64decode(encoded_password).decode("utf-8")
         return password
 
-    except Exception as e:
-        logger.error(f"Error retrieving namespace password: {e}")
+    except (ValueError, TypeError, AttributeError) as e:
+        logger.error("Error retrieving namespace password: %s", e)
         return None
 
 
-def get_namespace_list(username: str, headless: bool = True) -> Optional[List[str]]:
+def get_namespace_list(username: str, headless: bool = True) -> list[str] | None:
     """
     Get list of namespaces for a user from bonfire.
 
@@ -127,12 +124,12 @@ def get_namespace_list(username: str, headless: bool = True) -> Optional[List[st
 
         return stdout.split()
 
-    except Exception as e:
-        logger.error(f"Error getting namespace list: {e}")
+    except (OSError, ValueError, subprocess.SubprocessError) as e:
+        logger.error("Error getting namespace list: %s", e)
         return None
 
 
-def get_namespace_name(username: str, headless: bool = True) -> Optional[str]:
+def get_namespace_name(username: str, headless: bool = True) -> str | None:
     """
     Get the name of the user's namespace.
 
@@ -149,7 +146,7 @@ def get_namespace_name(username: str, headless: bool = True) -> Optional[str]:
     return None
 
 
-def get_namespace_expires(username: str, headless: bool = True) -> Optional[str]:
+def get_namespace_expires(username: str, headless: bool = True) -> str | None:
     """
     Get the expiration date of the namespace.
 
@@ -166,7 +163,7 @@ def get_namespace_expires(username: str, headless: bool = True) -> Optional[str]
     return None
 
 
-def get_namespace_route(namespace: str) -> Optional[str]:
+def get_namespace_route(namespace: str) -> str | None:
     """
     Get the route/URL for the namespace.
 
@@ -179,7 +176,7 @@ def get_namespace_route(namespace: str) -> Optional[str]:
     try:
         # Set the namespace context
         if not set_namespace(namespace):
-            logger.error(f"Failed to set namespace to {namespace}")
+            logger.error("Failed to set namespace to %s", namespace)
             return None
 
         # Get the route from the namespace
@@ -190,8 +187,8 @@ def get_namespace_route(namespace: str) -> Optional[str]:
 
         return None
 
-    except Exception as e:
-        logger.error(f"Error getting namespace route: {e}")
+    except (OSError, ValueError, subprocess.SubprocessError) as e:
+        logger.error("Error getting namespace route: %s", e)
         return None
 
 
@@ -210,12 +207,12 @@ def extend_namespace(namespace: str, duration: str = "72h") -> bool:
         success, _, stderr = run_command(f"bonfire namespace extend {namespace} -d {duration}")
 
         if not success:
-            logger.error(f"Failed to extend namespace: {stderr}")
+            logger.error("Failed to extend namespace: %s", stderr)
             return False
 
-        logger.info(f"Extended namespace {namespace} by {duration}")
+        logger.info("Extended namespace %s by %s", namespace, duration)
         return True
 
-    except Exception as e:
-        logger.error(f"Error extending namespace: {e}")
+    except (OSError, ValueError, subprocess.SubprocessError) as e:
+        logger.error("Error extending namespace: %s", e)
         return False

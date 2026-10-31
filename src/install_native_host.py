@@ -4,6 +4,7 @@ Installation script for Chrome native messaging host on Linux.
 This script automatically configures the native messaging manifest with the correct paths.
 """
 
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -90,13 +91,13 @@ def install_native_host(install_path=None, extension_id=None, browsers=None):
 
                 # Write manifest
                 manifest_path = chrome_dir / "com.redhat.rhotp.json"
-                with open(manifest_path, "w") as f:
+                with open(manifest_path, "w", encoding="utf-8") as f:
                     json.dump(manifest, f, indent=2)
 
                 print(f"✅ Installed to: {manifest_path}")
                 installed_count += 1
 
-            except Exception as e:
+            except (OSError, TypeError, ValueError) as e:
                 print(f"⚠️  Failed to install to {chrome_dir}: {e}")
 
     if installed_count == 0:
@@ -130,7 +131,7 @@ def uninstall_native_host():
                 manifest_path.unlink()
                 print(f"✅ Removed: {manifest_path}")
                 removed_count += 1
-            except Exception as e:
+            except OSError as e:
                 print(f"⚠️  Failed to remove {manifest_path}: {e}")
 
     if removed_count == 0:
@@ -143,8 +144,6 @@ def uninstall_native_host():
 
 def main():
     """Main function with command line interface."""
-    import argparse
-
     parser = argparse.ArgumentParser(description="Install/uninstall Chrome native messaging host for RHOTP")
     parser.add_argument("--path", help="Installation path (default: current directory)")
     parser.add_argument("--extension-id", help="Chrome extension ID")
