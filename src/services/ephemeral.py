@@ -10,8 +10,6 @@ import logging
 import subprocess
 from typing import List, Optional, Tuple
 
-from fastapi import HTTPException
-
 logger = logging.getLogger(__name__)
 
 
