@@ -72,9 +72,7 @@ def get_vpn_connection_status() -> dict[str, Any]:
             parts = line.split()
             # Check if this is a VPN connection (type field contains 'vpn')
             if len(parts) >= 4 and "vpn" in parts[-2].lower():
-                conn_name = " ".join(
-                    parts[:-3]
-                )  # Name is everything except last 3 fields (uuid, type, device)
+                conn_name = " ".join(parts[:-3])  # Name is everything except last 3 fields (uuid, type, device)
                 conn_uuid = parts[-3]
 
                 return {
@@ -129,9 +127,7 @@ def set_default_vpn_uuid(password_store_service, uuid: str) -> bool:
         return False
 
 
-def find_profile_by_uuid(
-    profiles: list[dict[str, Any]], uuid: str
-) -> dict[str, Any] | None:
+def find_profile_by_uuid(profiles: list[dict[str, Any]], uuid: str) -> dict[str, Any] | None:
     """
     Find a VPN profile by its UUID.
 
@@ -148,9 +144,7 @@ def find_profile_by_uuid(
     return None
 
 
-def find_profile_by_id(
-    profiles: list[dict[str, Any]], profile_id: str
-) -> dict[str, Any] | None:
+def find_profile_by_id(profiles: list[dict[str, Any]], profile_id: str) -> dict[str, Any] | None:
     """
     Find a VPN profile by its ID (case-insensitive).
 
