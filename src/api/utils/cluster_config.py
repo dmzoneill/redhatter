@@ -24,7 +24,9 @@ class ClusterConfigManager:
             config_path: Path to rhtoken.json. If None, uses default location.
         """
         if config_path is None:
-            script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            script_dir = os.path.dirname(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            )
             config_path = os.path.join(script_dir, "rhtoken.json")
 
         self.config_path = config_path
@@ -101,7 +103,9 @@ class ClusterConfigManager:
 
         return results
 
-    def add_cluster(self, cluster_id: str, name: str, url: str, description: str = "") -> Dict[str, Any]:
+    def add_cluster(
+        self, cluster_id: str, name: str, url: str, description: str = ""
+    ) -> Dict[str, Any]:
         """
         Add a new cluster configuration.
 

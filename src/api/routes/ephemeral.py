@@ -36,8 +36,12 @@ from api.dependencies.auth import verify_token as get_verify_token
 
 @router.get("/namespace/details", response_model=NamespaceDetails)
 def get_namespace_details(
-    headless: bool = Query(default=False, description="Use headless mode for authentication"),
-    include_password: bool = Query(default=False, description="Include namespace password in response"),
+    headless: bool = Query(
+        default=False, description="Use headless mode for authentication"
+    ),
+    include_password: bool = Query(
+        default=False, description="Include namespace password in response"
+    ),
     token: str = Depends(get_verify_token),
 ):
     """
@@ -74,7 +78,9 @@ def get_namespace_details(
         if include_password:
             password = get_namespace_password(namespace_name)
 
-        return NamespaceDetails(name=namespace_name, route=route, expires=expires, password=password)
+        return NamespaceDetails(
+            name=namespace_name, route=route, expires=expires, password=password
+        )
 
     except HTTPException:
         raise
@@ -85,7 +91,9 @@ def get_namespace_details(
 
 @router.get("/namespace/status", response_model=NamespaceStatus)
 def get_namespace_status(
-    headless: bool = Query(default=False, description="Use headless mode for authentication"),
+    headless: bool = Query(
+        default=False, description="Use headless mode for authentication"
+    ),
     token: str = Depends(get_verify_token),
 ):
     """
@@ -131,7 +139,9 @@ def get_namespace_status(
 @router.post("/namespace/extend")
 def extend_namespace(
     request: Optional[NamespaceExtendRequest] = None,
-    headless: bool = Query(default=False, description="Use headless mode for authentication"),
+    headless: bool = Query(
+        default=False, description="Use headless mode for authentication"
+    ),
     token: str = Depends(get_verify_token),
 ):
     """
@@ -166,7 +176,9 @@ def extend_namespace(
         # Extend the namespace
         success = extend_namespace_service(namespace_name, duration)
         if not success:
-            raise HTTPException(status_code=500, detail=f"Failed to extend namespace {namespace_name}")
+            raise HTTPException(
+                status_code=500, detail=f"Failed to extend namespace {namespace_name}"
+            )
 
         # Get updated namespace info
         namespace_list = get_namespace_list(username, headless)
@@ -192,7 +204,9 @@ def extend_namespace(
 
 @router.post("/namespace/clear-cache")
 def clear_namespace_cache(
-    headless: bool = Query(default=False, description="Use headless mode for authentication"),
+    headless: bool = Query(
+        default=False, description="Use headless mode for authentication"
+    ),
     token: str = Depends(get_verify_token),
 ):
     """
