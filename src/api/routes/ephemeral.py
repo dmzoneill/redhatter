@@ -5,10 +5,11 @@ ephemeral pipelines are run (bonfire/OpenShift environments).
 """
 
 import logging
-from typing import Optional
+import subprocess
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+from api.dependencies.auth import verify_token as get_verify_token
 from api.models.ephemeral import (
     NamespaceDetails,
     NamespaceExtendRequest,
@@ -28,21 +29,14 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/ephemeral", tags=["ephemeral"])
 
-
-# Import verify_token from main - we'll use a dependency function
-# Import verify_token from auth dependencies
-from api.dependencies.auth import verify_token as get_verify_token
+# Errors the ephemeral helpers can raise; mapped to HTTP 500 with the error message.
+_EPHEMERAL_ERRORS = (OSError, ValueError, KeyError, TypeError, RuntimeError, subprocess.SubprocessError)
 
 
-@router.get("/namespace/details", response_model=NamespaceDetails)
+@router.get("/namespace/details", response_model=NamespaceDetails, dependencies=[Depends(get_verify_token)])
 def get_namespace_details(
-    headless: bool = Query(
-        default=False, description="Use headless mode for authentication"
-    ),
-    include_password: bool = Query(
-        default=False, description="Include namespace password in response"
-    ),
-    token: str = Depends(get_verify_token),
+    headless: bool = Query(default=False, description="Use headless mode for authentication"),
+    include_password: bool = Query(default=False, description="Include namespace password in response"),
 ):
     """
     Get details about the user's ephemeral namespace.
@@ -78,23 +72,18 @@ def get_namespace_details(
         if include_password:
             password = get_namespace_password(namespace_name)
 
-        return NamespaceDetails(
-            name=namespace_name, route=route, expires=expires, password=password
-        )
+        return NamespaceDetails(name=namespace_name, route=route, expires=expires, password=password)
 
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Error getting namespace details: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    except _EPHEMERAL_ERRORS as e:
+        logger.error("Error getting namespace details: %s", e)
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.get("/namespace/status", response_model=NamespaceStatus)
+@router.get("/namespace/status", response_model=NamespaceStatus, dependencies=[Depends(get_verify_token)])
 def get_namespace_status(
-    headless: bool = Query(
-        default=False, description="Use headless mode for authentication"
-    ),
-    token: str = Depends(get_verify_token),
+    headless: bool = Query(default=False, description="Use headless mode for authentication"),
 ):
     """
     Get the status of the user's ephemeral namespace.
@@ -131,18 +120,15 @@ def get_namespace_status(
 
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Error getting namespace status: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    except _EPHEMERAL_ERRORS as e:
+        logger.error("Error getting namespace status: %s", e)
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.post("/namespace/extend")
+@router.post("/namespace/extend", dependencies=[Depends(get_verify_token)])
 def extend_namespace(
-    request: Optional[NamespaceExtendRequest] = None,
-    headless: bool = Query(
-        default=False, description="Use headless mode for authentication"
-    ),
-    token: str = Depends(get_verify_token),
+    request: NamespaceExtendRequest | None = None,
+    headless: bool = Query(default=False, description="Use headless mode for authentication"),
 ):
     """
     Extend the duration of the user's ephemeral namespace.
@@ -176,15 +162,13 @@ def extend_namespace(
         # Extend the namespace
         success = extend_namespace_service(namespace_name, duration)
         if not success:
-            raise HTTPException(
-                status_code=500, detail=f"Failed to extend namespace {namespace_name}"
-            )
+            raise HTTPException(status_code=500, detail=f"Failed to extend namespace {namespace_name}")
 
         # Get updated namespace info
         namespace_list = get_namespace_list(username, headless)
         expires = get_namespace_expires(username, headless)
 
-        logger.info(f"Extended namespace {namespace_name} by {duration}")
+        logger.info("Extended namespace %s by %s", namespace_name, duration)
 
         return {
             "success": True,
@@ -197,17 +181,14 @@ def extend_namespace(
 
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Error extending namespace: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    except _EPHEMERAL_ERRORS as e:
+        logger.error("Error extending namespace: %s", e)
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.post("/namespace/clear-cache")
+@router.post("/namespace/clear-cache", dependencies=[Depends(get_verify_token)])
 def clear_namespace_cache(
-    headless: bool = Query(
-        default=False, description="Use headless mode for authentication"
-    ),
-    token: str = Depends(get_verify_token),
+    headless: bool = Query(default=False, description="Use headless mode for authentication"),
 ):
     """
     Clear the namespace cache and refresh data.
@@ -244,6 +225,6 @@ def clear_namespace_cache(
 
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Error clearing namespace cache: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    except _EPHEMERAL_ERRORS as e:
+        logger.error("Error clearing namespace cache: %s", e)
+        raise HTTPException(status_code=500, detail=str(e)) from e
