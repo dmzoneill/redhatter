@@ -2,13 +2,6 @@
 cache-dir = "/tmp/.ruff_cache"
 line-length = 120
 
-[lint]
-ignore = [
-  "E203",
-  # FastAPI route handlers intentionally catch all exceptions and convert them to HTTP 500 responses.
-  "BLE001",
-]
-
 [lint.flake8-bugbear]
 # FastAPI dependency-injection markers are designed to be used as argument defaults.
 extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Body"]
