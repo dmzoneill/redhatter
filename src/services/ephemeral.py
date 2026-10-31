@@ -26,9 +26,7 @@ def run_command(cmd: str) -> Tuple[bool, str, str]:
         Tuple of (success, stdout, stderr)
     """
     try:
-        proc = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, text=True
-        )
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, text=True)
         stdout, stderr = proc.communicate()
         success = proc.returncode == 0
 
@@ -78,9 +76,7 @@ def get_namespace_password(namespace: str) -> Optional[str]:
             return None
 
         # Get the Keycloak secret
-        success, stdout, stderr = run_command(
-            f'/usr/local/bin/kubectl get secret "env-{namespace}-keycloak" -o json'
-        )
+        success, stdout, stderr = run_command(f'/usr/local/bin/kubectl get secret "env-{namespace}-keycloak" -o json')
 
         if not success:
             logger.error(f"Failed to get secret: {stderr}")
@@ -116,22 +112,15 @@ def get_namespace_list(username: str, headless: bool = True) -> Optional[List[st
     """
     try:
         # Check if we're on the correct server
-        success, server, _ = run_command(
-            "/usr/local/bin/oc project | awk -F'\"' '{print $4}'"
-        )
+        success, server, _ = run_command("/usr/local/bin/oc project | awk -F'\"' '{print $4}'")
 
-        if (
-            success
-            and server != "https://api.c-rh-c-eph.8p0c.p1.openshiftapps.com:6443"
-        ):
+        if success and server != "https://api.c-rh-c-eph.8p0c.p1.openshiftapps.com:6443":
             # Need to login to ephemeral environment
             headless_flag = "--headless" if headless else ""
             subprocess.call(f"/usr/local/bin/rhtoken e {headless_flag}", shell=True)
 
         # Get namespace list from bonfire
-        success, stdout, _ = run_command(
-            f"~/.local/bin/bonfire namespace list | grep {username}"
-        )
+        success, stdout, _ = run_command(f"~/.local/bin/bonfire namespace list | grep {username}")
 
         if not success or not stdout:
             return None
@@ -194,9 +183,7 @@ def get_namespace_route(namespace: str) -> Optional[str]:
             return None
 
         # Get the route from the namespace
-        success, route, _ = run_command(
-            "/usr/local/bin/kubectl get route 2>/dev/null | tail -n 1 | awk '{print $2}'"
-        )
+        success, route, _ = run_command("/usr/local/bin/kubectl get route 2>/dev/null | tail -n 1 | awk '{print $2}'")
 
         if success and route:
             return route
@@ -220,9 +207,7 @@ def extend_namespace(namespace: str, duration: str = "72h") -> bool:
         True if successful, False otherwise
     """
     try:
-        success, _, stderr = run_command(
-            f"bonfire namespace extend {namespace} -d {duration}"
-        )
+        success, _, stderr = run_command(f"bonfire namespace extend {namespace} -d {duration}")
 
         if not success:
             logger.error(f"Failed to extend namespace: {stderr}")

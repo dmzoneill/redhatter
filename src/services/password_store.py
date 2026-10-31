@@ -27,9 +27,7 @@ class PasswordStoreService:
         Returns:
             Decrypted content as string, or False on error
         """
-        secret_file_path = os.path.join(
-            self.pass_store_path, "redhat.com/" + the_item + ".gpg"
-        )
+        secret_file_path = os.path.join(self.pass_store_path, "redhat.com/" + the_item + ".gpg")
 
         if not os.path.exists(secret_file_path):
             logger.error(f"Error: {secret_file_path} does not exist.")
@@ -40,14 +38,10 @@ class PasswordStoreService:
             with open(secret_file_path, "rb") as f:
                 decrypted_data = self.gpg.decrypt_file(f)
                 if decrypted_data.ok:
-                    logger.debug(
-                        f"Password for {the_item} retrieved using gnupg (cached)."
-                    )
+                    logger.debug(f"Password for {the_item} retrieved using gnupg (cached).")
                     return decrypted_data.data.decode("utf-8")
                 else:
-                    logger.error(
-                        f"Error decrypting {the_item} with gnupg: {decrypted_data.status}"
-                    )
+                    logger.error(f"Error decrypting {the_item} with gnupg: {decrypted_data.status}")
                     return False
         except Exception as e:
             logger.error(f"Error retrieving password with gnupg: {e}")
@@ -62,34 +56,24 @@ class PasswordStoreService:
             )
 
             if result.returncode == 0:
-                logger.debug(
-                    f"Password for {the_item} successfully retrieved using pass show."
-                )
+                logger.debug(f"Password for {the_item} successfully retrieved using pass show.")
                 return result.stdout.strip()
             else:
-                logger.error(
-                    f"Error retrieving password with pass show: {result.stderr}"
-                )
+                logger.error(f"Error retrieving password with pass show: {result.stderr}")
                 return False
         except Exception as e:
             logger.error(f"Error retrieving password using pass show: {e}")
 
         # As a final fallback, attempt gnupg again after prompting the user if necessary
-        logger.debug(
-            "Fallback: Attempting gnupg decryption again after potential passphrase prompt."
-        )
+        logger.debug("Fallback: Attempting gnupg decryption again after potential passphrase prompt.")
         try:
             with open(secret_file_path, "rb") as f:
                 decrypted_data = self.gpg.decrypt_file(f)
                 if decrypted_data.ok:
-                    logger.debug(
-                        f"Password for {the_item} successfully retrieved after fallback."
-                    )
+                    logger.debug(f"Password for {the_item} successfully retrieved after fallback.")
                     return decrypted_data.data.decode("utf-8")
                 else:
-                    logger.error(
-                        f"Error decrypting {the_item} after fallback with gnupg: {decrypted_data.status}"
-                    )
+                    logger.error(f"Error decrypting {the_item} after fallback with gnupg: {decrypted_data.status}")
                     return False
         except Exception as e:
             logger.error(f"Error retrieving password after fallback with gnupg: {e}")
@@ -122,9 +106,7 @@ class PasswordStoreService:
         Returns:
             True if successful, False otherwise
         """
-        secret_file_path = os.path.join(
-            self.pass_store_path, "redhat.com/" + the_item + ".gpg"
-        )
+        secret_file_path = os.path.join(self.pass_store_path, "redhat.com/" + the_item + ".gpg")
         recipient_key_id = self.get_recipient_key_id()
 
         if not recipient_key_id:
@@ -140,17 +122,13 @@ class PasswordStoreService:
                 logger.info(f"Successfully updated {the_item}.")
                 return True
             else:
-                logger.error(
-                    f"Error encrypting the data with gnupg: {encrypted_data.status}"
-                )
+                logger.error(f"Error encrypting the data with gnupg: {encrypted_data.status}")
                 return False
         except Exception as e:
             logger.error(f"Error encrypting the password with gnupg: {e}")
 
         # If gnupg encryption fails, attempt to use pass show to prompt for the passphrase
-        logger.debug(
-            "Attempting to retrieve encryption passphrase interactively using pass show..."
-        )
+        logger.debug("Attempting to retrieve encryption passphrase interactively using pass show...")
         try:
             result = subprocess.run(
                 ["pass", "show", f"redhat.com/{the_item}"],
@@ -166,22 +144,16 @@ class PasswordStoreService:
                     logger.info(f"Successfully updated {the_item} after pass show.")
                     return True
                 else:
-                    logger.error(
-                        f"Error encrypting the data after pass show: {encrypted_data.status}"
-                    )
+                    logger.error(f"Error encrypting the data after pass show: {encrypted_data.status}")
                     return False
             else:
-                logger.error(
-                    f"Error retrieving passphrase using pass show: {result.stderr}"
-                )
+                logger.error(f"Error retrieving passphrase using pass show: {result.stderr}")
                 return False
         except Exception as e:
             logger.error(f"Error prompting for passphrase with pass show: {e}")
 
         # As a final fallback, attempt to encrypt using gnupg after potential passphrase prompt
-        logger.debug(
-            "Fallback: Attempting gnupg encryption again after potential passphrase prompt."
-        )
+        logger.debug("Fallback: Attempting gnupg encryption again after potential passphrase prompt.")
         try:
             encrypted_data = self.gpg.encrypt(new_value, recipient_key_id)
             if encrypted_data.ok:
@@ -190,14 +162,10 @@ class PasswordStoreService:
                 logger.info(f"Successfully updated {the_item} after fallback.")
                 return True
             else:
-                logger.error(
-                    f"Error encrypting the data with gnupg after fallback: {encrypted_data.status}"
-                )
+                logger.error(f"Error encrypting the data with gnupg after fallback: {encrypted_data.status}")
                 return False
         except Exception as e:
-            logger.error(
-                f"Error encrypting the password with gnupg after fallback: {e}"
-            )
+            logger.error(f"Error encrypting the password with gnupg after fallback: {e}")
             return False
 
     def generate_hotp_token(self):
