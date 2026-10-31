@@ -172,7 +172,7 @@ def _get_env_name(env: str) -> str:
             clusters = config.get("clusters", {})
             cluster = clusters.get(env, {})
             return cast(str, cluster.get("name", "Unknown"))
-    except Exception as e:
+    except (OSError, ValueError, AttributeError) as e:
         logger.error("Error loading environment name from config: %s", e)
         return "Unknown"
 
@@ -431,14 +431,15 @@ def open_cluster_terminal(cluster_id: str, _token: str = Depends(verify_token)) 
         logger.debug("[open-terminal] Full terminal command: %s", terminal_command)
 
         # Start the process and immediately return (don't wait for it)
-        process = subprocess.Popen(  # pylint: disable=consider-using-with  # detached terminal
-            terminal_command,
+        # setsid -f forks the terminal into its own session and returns at once, so we don't wait on it.
+        subprocess.run(
+            ["setsid", "-f", *terminal_command],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
-            start_new_session=True,
+            check=False,
         )
 
-        logger.info("[open-terminal] Terminal process started with PID: %s", process.pid)
+        logger.info("[open-terminal] Terminal process started")
         logger.info("[open-terminal] Successfully opened terminal for cluster %s", cluster_id)
 
         return {
@@ -478,11 +479,11 @@ def open_cluster_web(cluster_id: str, _token: str = Depends(verify_token)) -> di
         console_url = transform_oauth_to_console_url(oauth_url)
 
         # Open URL in browser
-        subprocess.Popen(  # pylint: disable=consider-using-with  # detached browser
-            ["xdg-open", console_url],
+        subprocess.run(
+            ["setsid", "-f", "xdg-open", console_url],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
-            start_new_session=True,
+            check=False,
         )
 
         logger.info("Opened web console for cluster %s: %s", cluster_id, console_url)
