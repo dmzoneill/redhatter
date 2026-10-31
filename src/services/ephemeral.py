@@ -23,9 +23,9 @@ def run_command(cmd: str) -> tuple[bool, str, str]:
         Tuple of (success, stdout, stderr)
     """
     try:
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, text=True)
-        stdout, stderr = proc.communicate()
-        success = proc.returncode == 0
+        with subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, text=True) as proc:
+            stdout, stderr = proc.communicate()
+            success = proc.returncode == 0
 
         logger.debug("Command: %s", cmd)
         logger.debug("Success: %s", success)
